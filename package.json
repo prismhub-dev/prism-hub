@@ -1,0 +1,27 @@
+{
+  "name": "prism-hub",
+  "version": "1.0.0",
+  "description": "An integrated academic intelligence and analytics platform made for students, but by a student!\r A  centralised dashboard which eliminates academic data fragmentation through predictive analytics, smart assignment, smart assignment prioritisation, and an AI-powered flashcard system.\r Built with Python/Flask, PostgreSQL, Scikit-learn and Vanilla JS!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css",
+    "watch:css": "tailwindcss -i ./static/css/input.css -o ./static/css/main.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prismhub-dev/prism-hub.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/prismhub-dev/prism-hub/issues"
+  },
+  "homepage": "https://github.com/prismhub-dev/prism-hub#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

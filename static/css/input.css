@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+    --color-brand-gold: #C9A84C;
+    --color-brand-dark: #1a1a1a;
+    --color-brand-card: #242424;
+    --color-brand-border: #333333;
+    --font-family-sans: 'Inter', sans-serif;
+}
