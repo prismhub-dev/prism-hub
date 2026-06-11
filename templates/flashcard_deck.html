@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ deck.name }} — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('flashcards') }}" class="back-link">← Flashcards</a>
+        <h1 class="page-title" style="margin-top:0.25rem">{{ deck.name }}</h1>
+        <p class="deck-subject-label">{{ deck.subject }} · {{ cards|length }} card{{ 's' if cards|length != 1 }}</p>
+    </div>
+    <div style="display:flex;gap:0.75rem">
+        {% if cards %}
+        <a href="{{ url_for('quiz', deck_id=deck.id) }}" class="btn-gold">Study deck</a>
+        {% endif %}
+        <button class="btn-outline" onclick="document.getElementById('add-card-modal').style.display='flex'">+ Add card</button>
+        <button class="btn-outline" onclick="document.getElementById('import-modal').style.display='flex'">↑ Import</button>
+    </div>
+</div>
+
+<div id="add-card-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Add card</h2>
+            <button class="modal-close" onclick="document.getElementById('add-card-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="add_card">
+            <div class="form-group">
+                <label>Question / Front</label>
+                <textarea name="question" class="form-textarea" placeholder="What is..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Answer / Back</label>
+                <textarea name="answer" class="form-textarea" placeholder="The answer is..." required></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Add card</button>
+        </form>
+    </div>
+</div>
+
+<div id="import-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Import cards</h2>
+            <button class="modal-close" onclick="document.getElementById('import-modal').style.display='none'">✕</button>
+        </div>
+        <div class="import-tabs">
+            <button class="import-tab active" onclick="switchImport('text')">Paste text</button>
+            <button class="import-tab" onclick="switchImport('csv')">Upload CSV</button>
+        </div>
+        <div id="import-text" class="import-panel">
+            <form method="POST">
+                <input type="hidden" name="action" value="import_cards">
+                <div class="form-group" style="margin-top:1rem">
+                    <label>Separator character</label>
+                    <select name="separator" class="form-select">
+                        <option value=",">Comma ( , )</option>
+                        <option value=";">Semicolon ( ; )</option>
+                        <option value="|">Pipe ( | )</option>
+                        <option value="	">Tab</option>
+                        <option value=" - ">Dash ( - )</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Paste your cards (one per line)</label>
+                    <textarea name="import_text" class="form-textarea" style="min-height:140px" placeholder="What is Flask, A Python web framework&#10;What is SQL, A database query language"></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Import cards</button>
+            </form>
+        </div>
+        <div id="import-csv" class="import-panel" style="display:none">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="import_csv">
+                <div class="form-group" style="margin-top:1rem">
+                    <label>CSV file (column 1 = question, column 2 = answer)</label>
+                    <input type="file" name="csv_file" accept=".csv" class="form-file">
+                </div>
+                <button type="submit" class="btn-primary">Import CSV</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if cards %}
+<div class="cards-list">
+    {% for card in cards %}
+    <div class="card-row">
+        <div class="card-row-content">
+            <div class="card-question">{{ card.question }}</div>
+            <div class="card-answer">{{ card.answer }}</div>
+        </div>
+        <form method="POST" style="display:inline">
+            <input type="hidden" name="action" value="delete_card">
+            <input type="hidden" name="card_id" value="{{ card.id }}">
+            <button type="submit" class="delete-btn">✕</button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:3rem">
+    <p>No cards in this deck yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchImport(tab) {
+    document.getElementById('import-text').style.display = tab === 'text' ? 'block' : 'none';
+    document.getElementById('import-csv').style.display = tab === 'csv' ? 'block' : 'none';
+    document.querySelectorAll('.import-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && tab === 'text') || (i === 1 && tab === 'csv'));
+    });
+}
+</script>
+{% endblock %}

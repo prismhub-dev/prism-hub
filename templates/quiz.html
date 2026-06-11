@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Quiz — {{ deck.name }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="back-link">← {{ deck.name }}</a>
+        <h1 class="page-title" style="margin-top:0.25rem">Quiz mode</h1>
+    </div>
+    <div id="quiz-progress-label" class="deck-subject-label">Card 1 of {{ cards|length }}</div>
+</div>
+
+{% if cards %}
+<div class="quiz-container">
+    <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" id="progress-fill" style="width: 0%"></div>
+    </div>
+
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="flashcard-inner" id="flashcard-inner">
+            <div class="flashcard-front">
+                <p class="flashcard-label">Question</p>
+                <p class="flashcard-text" id="question-text"></p>
+                <p class="flashcard-hint">Click to reveal answer</p>
+            </div>
+            <div class="flashcard-back">
+                <p class="flashcard-label">Answer</p>
+                <p class="flashcard-text" id="answer-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="quiz-controls" id="quiz-controls" style="display:none">
+        <button class="quiz-btn quiz-wrong" onclick="nextCard(false)">✕ Got it wrong</button>
+        <button class="quiz-btn quiz-correct" onclick="nextCard(true)">✓ Got it right</button>
+    </div>
+
+    <div class="quiz-results" id="quiz-results" style="display:none">
+        <div class="card" style="max-width:480px;margin:0 auto;text-align:center">
+            <p class="results-emoji" id="results-emoji">🎉</p>
+            <h2 class="results-title">Session complete</h2>
+            <p class="results-score" id="results-score"></p>
+            <p class="streak-display" id="results-streak" style="margin:0.5rem 0 1.5rem"></p>
+            <div style="display:flex;gap:0.75rem;justify-content:center">
+                <button class="btn-outline" onclick="restartQuiz()">Study again</button>
+                <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="btn-gold" style="display:inline-block">Back to deck</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const cards = {{ cards | tojson }};
+let shuffled = [...cards].sort(() => Math.random() - 0.5);
+let current = 0;
+let flipped = false;
+let correct = 0;
+
+function loadCard() {
+    if (current >= shuffled.length) {
+        showResults();
+        return;
+    }
+    flipped = false;
+    document.getElementById('flashcard-inner').style.transform = 'rotateY(0deg)';
+    document.getElementById('question-text').textContent = shuffled[current].question;
+    document.getElementById('answer-text').textContent = shuffled[current].answer;
+    document.getElementById('quiz-controls').style.display = 'none';
+    document.getElementById('quiz-progress-label').textContent = `Card ${current + 1} of ${shuffled.length}`;
+    const pct = (current / shuffled.length) * 100;
+    document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+function flipCard() {
+    if (current >= shuffled.length) return;
+    flipped = !flipped;
+    document.getElementById('flashcard-inner').style.transform = flipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+    document.getElementById('quiz-controls').style.display = flipped ? 'flex' : 'none';
+}
+
+function nextCard(wasCorrect) {
+    if (wasCorrect) correct++;
+    current++;
+    loadCard();
+}
+
+function showResults() {
+    document.getElementById('flashcard').style.display = 'none';
+    document.getElementById('quiz-controls').style.display = 'none';
+    document.getElementById('quiz-results').style.display = 'block';
+    document.getElementById('progress-fill').style.width = '100%';
+    const total = shuffled.length;
+    const pct = Math.round((correct / total) * 100);
+    document.getElementById('results-score').textContent = `${correct} / ${total} correct (${pct}%)`;
+    document.getElementById('results-emoji').textContent = pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📖';
+    fetch('/flashcards/{{ deck.id }}/complete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({correct: correct, total: total})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.streak > 0) {
+            document.getElementById('results-streak').textContent = `🔥 ${data.streak} day streak`;
+        }
+    });
+}
+
+function restartQuiz() {
+    shuffled = [...cards].sort(() => Math.random() - 0.5);
+    current = 0;
+    correct = 0;
+    document.getElementById('flashcard').style.display = 'block';
+    document.getElementById('quiz-results').style.display = 'none';
+    loadCard();
+}
+
+loadCard();
+</script>
+{% else %}
+<div class="empty-state" style="margin-top:4rem">
+    <p>No cards in this deck to study.</p>
+    <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="btn-gold" style="display:inline-block;margin-top:0.75rem">Add cards first</a>
+</div>
+{% endif %}
+
+{% endblock %}

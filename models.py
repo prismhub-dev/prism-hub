@@ -14,6 +14,8 @@ class User(UserMixin, db.Model):
     assignments = db.relationship('Assignment', backref='user', lazy=True)
     marks = db.relationship('Mark', backref='user', lazy=True)
     flashcard_decks = db.relationship('FlashcardDeck', backref='user', lazy=True)
+    streak = db.Column(db.Integer, default=0)
+    last_studied = db.Column(db.DateTime, nullable=True)
 
 class Assignment(db.Model):
     __tablename__ = 'assignments'

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Flashcards — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Flashcards</h1>
+        {% if user.streak > 0 %}
+        <p class="streak-display">🔥 {{ user.streak }} day streak</p>
+        {% endif %}
+    </div>
+    <button class="btn-gold" onclick="document.getElementById('deck-modal').style.display='flex'">+ New deck</button>
+</div>
+
+<div id="deck-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">New deck</h2>
+            <button class="modal-close" onclick="document.getElementById('deck-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('flashcards') }}">
+            <input type="hidden" name="action" value="create_deck">
+            <div class="form-group">
+                <label>Deck name</label>
+                <input type="text" name="name" placeholder="e.g. Chapter 3 Vocab" required>
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <input type="text" name="subject" placeholder="e.g. Enterprise Computing" required>
+            </div>
+            <button type="submit" class="btn-primary">Create deck</button>
+        </form>
+    </div>
+</div>
+
+{% if decks %}
+<div class="deck-grid">
+    {% for deck in decks %}
+    <div class="deck-card">
+        <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="deck-link">
+            <div class="deck-subject">{{ deck.subject }}</div>
+            <div class="deck-name">{{ deck.name }}</div>
+            <div class="deck-count">{{ deck.cards|length }} card{{ 's' if deck.cards|length != 1 }}</div>
+        </a>
+        <div class="deck-actions">
+            <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="deck-study-btn">Study</a>
+            <form method="POST" action="{{ url_for('flashcards') }}" style="display:inline">
+                <input type="hidden" name="action" value="delete_deck">
+                <input type="hidden" name="deck_id" value="{{ deck.id }}">
+                <button type="submit" class="delete-btn">✕</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:4rem">
+    <p>No decks yet — create one to get started.</p>
+    <button class="btn-gold" style="margin-top:0.75rem" onclick="document.getElementById('deck-modal').style.display='flex'">Create your first deck</button>
+</div>
+{% endif %}
+
+{% endblock %}

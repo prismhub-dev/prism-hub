@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, request, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard
 import os
@@ -105,11 +105,6 @@ def dashboard():
         deck_count=decks,
         now=datetime.now(timezone.utc)
     )
-
-@app.route('/flashcards')
-@login_required
-def flashcards():
-    return render_template('flashcards.html')
 
 @app.route('/assignments', methods=['GET', 'POST'])
 @login_required
@@ -237,6 +232,156 @@ def marks():
         subjects[m.subject].append(m)
 
     return render_template('marks.html', subjects=subjects, all_marks=all_marks)
+
+@app.route('/flashcards', methods=['GET', 'POST'])
+@login_required
+def flashcards():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'create_deck':
+            name = request.form.get('name', '').strip()
+            subject = request.form.get('subject', '').strip()
+            if name and subject:
+                deck = FlashcardDeck(
+                    user_id=current_user.id,
+                    name=name,
+                    subject=subject
+                )
+                db.session.add(deck)
+                db.session.commit()
+                flash('Deck created.', 'success')
+
+        elif action == 'delete_deck':
+            deck_id = int(request.form.get('deck_id'))
+            deck = FlashcardDeck.query.filter_by(
+                id=deck_id, user_id=current_user.id
+            ).first()
+            if deck:
+                db.session.delete(deck)
+                db.session.commit()
+                flash('Deck deleted.', 'success')
+
+        return redirect(url_for('flashcards'))
+
+    decks = FlashcardDeck.query.filter_by(user_id=current_user.id).all()
+    return render_template('flashcards.html', decks=decks, user=current_user)
+
+
+@app.route('/flashcards/<int:deck_id>', methods=['GET', 'POST'])
+@login_required
+def flashcard_deck(deck_id):
+    deck = FlashcardDeck.query.filter_by(
+        id=deck_id, user_id=current_user.id
+    ).first_or_404()
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'add_card':
+            question = request.form.get('question', '').strip()
+            answer = request.form.get('answer', '').strip()
+            if question and answer:
+                card = Flashcard(deck_id=deck.id, question=question, answer=answer)
+                db.session.add(card)
+                db.session.commit()
+                flash('Card added.', 'success')
+
+        elif action == 'delete_card':
+            card_id = int(request.form.get('card_id'))
+            card = Flashcard.query.filter_by(id=card_id, deck_id=deck.id).first()
+            if card:
+                db.session.delete(card)
+                db.session.commit()
+
+        elif action == 'import_cards':
+            import_text = request.form.get('import_text', '').strip()
+            separator = request.form.get('separator', ',')
+            if import_text:
+                lines = import_text.strip().split('\n')
+                added = 0
+                skipped = 0
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if separator in line:
+                        parts = line.split(separator, 1)
+                        question = parts[0].strip()
+                        answer = parts[1].strip()
+                        if question and answer:
+                            card = Flashcard(
+                                deck_id=deck.id,
+                                question=question,
+                                answer=answer
+                            )
+                            db.session.add(card)
+                            added += 1
+                    else:
+                        skipped += 1
+                db.session.commit()
+                flash(f'{added} cards imported.{" " + str(skipped) + " lines skipped (no separator found)." if skipped else ""}', 'success')
+
+        elif action == 'import_csv':
+            import csv, io
+            file = request.files.get('csv_file')
+            if file and file.filename.endswith('.csv'):
+                stream = io.StringIO(file.stream.read().decode('utf-8'))
+                reader = csv.reader(stream)
+                added = 0
+                for row in reader:
+                    if len(row) >= 2:
+                        question = row[0].strip()
+                        answer = row[1].strip()
+                        if question and answer:
+                            card = Flashcard(
+                                deck_id=deck.id,
+                                question=question,
+                                answer=answer
+                            )
+                            db.session.add(card)
+                            added += 1
+                db.session.commit()
+                flash(f'{added} cards imported from CSV.', 'success')
+
+        return redirect(url_for('flashcard_deck', deck_id=deck.id))
+
+    cards = Flashcard.query.filter_by(deck_id=deck.id).all()
+    return render_template('flashcard_deck.html', deck=deck, cards=cards)
+
+@app.route('/flashcards/<int:deck_id>/quiz')
+@login_required
+def quiz(deck_id):
+    deck = FlashcardDeck.query.filter_by(
+        id=deck_id, user_id=current_user.id
+    ).first_or_404()
+    cards_raw = Flashcard.query.filter_by(deck_id=deck.id).all()
+    cards = [{'question': c.question, 'answer': c.answer, 'id': c.id} for c in cards_raw]
+    return render_template('quiz.html', deck=deck, cards=cards)
+
+@app.route('/flashcards/<int:deck_id>/complete', methods=['POST'])
+@login_required
+def quiz_complete(deck_id):
+    from datetime import datetime, timezone, timedelta
+    import json
+    data = request.get_json()
+    today = datetime.now(timezone.utc).date()
+    user = current_user
+    
+    last = user.last_studied
+    if last:
+        last_date = last.date() if hasattr(last, 'date') else last
+        diff = (today - last_date).days
+        if diff == 1:
+            user.streak = (user.streak or 0) + 1
+        elif diff > 1:
+            user.streak = 1
+    else:
+        user.streak = 1
+    
+    user.last_studied = datetime.now(timezone.utc)
+    db.session.commit()
+    return jsonify({'streak': user.streak})
 
 if __name__ == '__main__':
     app.run(debug=True)
