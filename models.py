@@ -35,6 +35,10 @@ class Mark(db.Model):
     mark = db.Column(db.Float, nullable=False)
     max_mark = db.Column(db.Float, nullable=False)
     weight = db.Column(db.Float, nullable=False)
+    active = db.Column(db.Boolean, default=True)
+    mean = db.Column(db.Float, nullable=True)
+    median = db.Column(db.Float, nullable=True)
+    feedback = db.Column(db.Text, nullable=True)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class FlashcardDeck(db.Model):

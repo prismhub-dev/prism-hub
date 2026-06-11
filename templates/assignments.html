@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Assignments — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1 class="page-title">Assignments</h1>
+    <button class="btn-gold" onclick="document.getElementById('add-modal').style.display='flex'">+ Add assignment</button>
+</div>
+
+<div id="add-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">New assignment</h2>
+            <button class="modal-close" onclick="document.getElementById('add-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('assignments') }}">
+            <input type="hidden" name="action" value="add">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" placeholder="e.g. Research Essay" required>
+            </div>
+            <div class="form-group">
+                <label>Subject</label>
+                <input type="text" name="subject" placeholder="e.g. Enterprise Computing" required>
+            </div>
+            <div class="form-group">
+                <label>Due date</label>
+                <input type="date" name="due_date" required>
+            </div>
+            <div class="form-group">
+                <label>Priority</label>
+                <select name="priority" class="form-select">
+                    <option value="1">Low</option>
+                    <option value="2" selected>Medium</option>
+                    <option value="3">High</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Add assignment</button>
+        </form>
+    </div>
+</div>
+
+<div class="section-label">Pending ({{ pending|length }})</div>
+{% if pending %}
+<div class="assignment-full-list">
+    {% for a in pending %}
+    <div class="assignment-row">
+        <div class="assignment-row-left">
+            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline">
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                <button type="submit" class="check-btn">○</button>
+            </form>
+            <div>
+                <p class="assignment-title">{{ a.title }}</p>
+                <p class="assignment-subject">{{ a.subject }}</p>
+            </div>
+        </div>
+        <div class="assignment-row-right">
+            <span class="priority-badge priority-{{ a.priority }}">
+                {% if a.priority == 1 %}Low{% elif a.priority == 2 %}Medium{% else %}High{% endif %}
+            </span>
+            <span class="due-chip {% if a.due_date < now %}due-overdue{% endif %}">
+                {{ a.due_date.strftime('%d %b %Y') }}
+            </span>
+            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                <button type="submit" class="delete-btn">✕</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">No pending assignments — nice work.</div>
+{% endif %}
+
+{% if completed %}
+<div class="section-label" style="margin-top:2rem">Completed ({{ completed|length }})</div>
+<div class="assignment-full-list">
+    {% for a in completed %}
+    <div class="assignment-row completed-row">
+        <div class="assignment-row-left">
+            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline">
+                <input type="hidden" name="action" value="toggle">
+                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                <button type="submit" class="check-btn done">✓</button>
+            </form>
+            <div>
+                <p class="assignment-title" style="text-decoration:line-through;opacity:0.5">{{ a.title }}</p>
+                <p class="assignment-subject">{{ a.subject }}</p>
+            </div>
+        </div>
+        <div class="assignment-row-right">
+            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="assignment_id" value="{{ a.id }}">
+                <button type="submit" class="delete-btn">✕</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
