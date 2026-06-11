@@ -83,7 +83,28 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    from datetime import datetime, timezone
+    assignments = Assignment.query.filter_by(
+        user_id=current_user.id, completed=False
+    ).order_by(Assignment.due_date).limit(5).all()
+    marks = Mark.query.filter_by(user_id=current_user.id).all()
+    
+    weighted_avg = 0
+    if marks:
+        weighted_sum = sum((m.mark / m.max_mark) * m.weight for m in marks)
+        total_weight = sum(m.weight for m in marks)
+        weighted_avg = round((weighted_sum / total_weight) * 100, 1) if total_weight else 0
+
+    decks = FlashcardDeck.query.filter_by(user_id=current_user.id).count()
+    
+    return render_template('dashboard.html',
+        user=current_user,
+        assignments=assignments,
+        weighted_avg=weighted_avg,
+        mark_count=len(marks),
+        deck_count=decks,
+        now=datetime.now(timezone.utc)
+    )
 
 @app.route('/assignments')
 @login_required

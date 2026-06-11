@@ -1,5 +1,87 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — Prism Hub{% endblock %}
 {% block content %}
-<h1>Dashboard</h1>
+
+<div class="dashboard-header">
+    <div>
+        <h1 class="dashboard-title">Welcome back, {{ user.username }}</h1>
+        <p class="dashboard-sub">Here's your academic overview</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <p class="stat-label">Weighted Average</p>
+        <p class="stat-value gold">{{ weighted_avg }}%</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">Assessments Logged</p>
+        <p class="stat-value">{{ mark_count }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">Flashcard Decks</p>
+        <p class="stat-value">{{ deck_count }}</p>
+    </div>
+    <div class="stat-card">
+        <p class="stat-label">Upcoming Tasks</p>
+        <p class="stat-value">{{ assignments|length }}</p>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Upcoming assignments</h2>
+            <a href="{{ url_for('assignments') }}" class="card-link">View all</a>
+        </div>
+        {% if assignments %}
+            <div class="assignment-list">
+                {% for a in assignments %}
+                <div class="assignment-item">
+                    <div class="assignment-info">
+                        <p class="assignment-title">{{ a.title }}</p>
+                        <p class="assignment-subject">{{ a.subject }}</p>
+                    </div>
+                    <div class="assignment-meta">
+                        <span class="priority-badge priority-{{ a.priority }}">
+                            {% if a.priority == 1 %}Low{% elif a.priority == 2 %}Mid{% else %}High{% endif %}
+                        </span>
+                        <p class="assignment-due">{{ a.due_date.strftime('%d %b') }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No upcoming assignments</p>
+                <a href="{{ url_for('assignments') }}" class="btn-gold" style="display:inline-block;margin-top:0.75rem">Add one</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Quick actions</h2>
+        </div>
+        <div class="quick-actions">
+            <a href="{{ url_for('assignments') }}" class="action-btn">
+                <span class="action-icon">📋</span>
+                <span>Add assignment</span>
+            </a>
+            <a href="{{ url_for('marks') }}" class="action-btn">
+                <span class="action-icon">📊</span>
+                <span>Log a mark</span>
+            </a>
+            <a href="{{ url_for('flashcards') }}" class="action-btn">
+                <span class="action-icon">🃏</span>
+                <span>Study flashcards</span>
+            </a>
+            <a href="{{ url_for('marks') }}" class="action-btn">
+                <span class="action-icon">📈</span>
+                <span>View analytics</span>
+            </a>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
