@@ -84,7 +84,6 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    from datetime import datetime, timezone
     assignments = Assignment.query.filter_by(
         user_id=current_user.id, completed=False
     ).order_by(Assignment.due_date).limit(5).all()
@@ -125,7 +124,6 @@ def assignments():
             priority = int(request.form.get('priority', 2))
             
             if title and subject and due_date_str:
-                from datetime import datetime
                 due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
                 assignment = Assignment(
                     user_id=current_user.id,
@@ -191,7 +189,6 @@ def marks():
             feedback = request.form.get('feedback', '').strip()
 
             if subject and assessment_name and mark and max_mark and weight_raw:
-                from datetime import datetime
                 import re
                 if '/' in weight_raw:
                     parts = weight_raw.split('/')
