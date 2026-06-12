@@ -89,7 +89,7 @@
             <div class="card-question">{{ card.question }}</div>
             <div class="card-answer">{{ card.answer }}</div>
         </div>
-        <form method="POST" style="display:inline">
+        <form method="POST" style="display:inline" onsubmit="return confirm('Delete this deck and all its cards?')">
             <input type="hidden" name="action" value="delete_card">
             <input type="hidden" name="card_id" value="{{ card.id }}">
             <button type="submit" class="delete-btn">✕</button>

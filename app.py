@@ -1,10 +1,11 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
-from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard
+from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings
 import os
 from dotenv import load_dotenv
 import bcrypt
 from datetime import datetime, timezone
+import csv, io
 
 load_dotenv()
 
@@ -69,7 +70,7 @@ def login():
         password = request.form.get('password', '').strip()
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-            login_user(user)
+            login_user(user, remember=True)
             return redirect(url_for('dashboard'))
         flash('Invalid email or password.', 'error')
     return render_template('login.html')
@@ -323,7 +324,6 @@ def flashcard_deck(deck_id):
                 flash(f'{added} cards imported.{" " + str(skipped) + " lines skipped (no separator found)." if skipped else ""}', 'success')
 
         elif action == 'import_csv':
-            import csv, io
             file = request.files.get('csv_file')
             if file and file.filename.endswith('.csv'):
                 stream = io.StringIO(file.stream.read().decode('utf-8'))
@@ -343,6 +343,8 @@ def flashcard_deck(deck_id):
                             added += 1
                 db.session.commit()
                 flash(f'{added} cards imported from CSV.', 'success')
+            else:
+                flash('Please upload a valid .csv file.', 'error')
 
         return redirect(url_for('flashcard_deck', deck_id=deck.id))
 
@@ -382,6 +384,359 @@ def quiz_complete(deck_id):
     user.last_studied = datetime.now(timezone.utc)
     db.session.commit()
     return jsonify({'streak': user.streak})
+
+@app.route('/timetable', methods=['GET', 'POST'])
+@login_required
+def timetable():
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'import_ics':
+            from icalendar import Calendar
+            import pytz
+            from datetime import timezone as tz
+            
+            file = request.files.get('ics_file')
+            term_id = request.form.get('term_id') or None
+            timezone_str = request.form.get('timezone', 'Australia/Sydney')
+            local_tz = pytz.timezone(timezone_str)
+
+            if file and file.filename.endswith('.ics'):
+                TimetableEvent.query.filter_by(
+                    user_id=current_user.id,
+                    is_manual=False,
+                    term_id=term_id
+                ).delete()
+                db.session.commit()
+
+                cal = Calendar.from_ical(file.stream.read())
+                added = 0
+                skipped = 0
+
+                for component in cal.walk():
+                    if component.name != 'VEVENT':
+                        continue
+
+                    summary = str(component.get('SUMMARY', ''))
+                    description = str(component.get('DESCRIPTION', ''))
+                    location = str(component.get('LOCATION', ''))
+                    dtstart = component.get('DTSTART').dt
+                    dtend = component.get('DTEND').dt
+
+                    if hasattr(dtstart, 'hour'):
+                        if dtstart.tzinfo is not None:
+                            dtstart = dtstart.astimezone(local_tz).replace(tzinfo=None)
+                            dtend = dtend.astimezone(local_tz).replace(tzinfo=None)
+                    else:
+                        skipped += 1
+                        continue
+
+                    if ':' in summary:
+                        parts = summary.split(':', 1)
+                        class_code = parts[0].strip()
+                        subject = parts[1].strip()
+                    else:
+                        class_code = ''
+                        subject = summary.strip()
+
+                    teacher = ''
+                    period = ''
+                    for line in description.replace('\\n', '\n').split('\n'):
+                        if line.startswith('Teacher:'):
+                            teacher = line.replace('Teacher:', '').strip()
+                        elif line.startswith('Period:'):
+                            period = line.replace('Period:', '').strip()
+
+                    room = location.replace('Room:', '').strip()
+
+                    if 'Roll Call' in period or 'Roll' in subject:
+                        skipped += 1
+                        continue
+
+                    event = TimetableEvent(
+                        user_id=current_user.id,
+                        term_id=term_id,
+                        subject=subject,
+                        class_code=class_code,
+                        teacher=teacher,
+                        room=room,
+                        period=period,
+                        start_time=dtstart,
+                        end_time=dtend,
+                        day_of_week=dtstart.weekday(),
+                        is_manual=False,
+                        event_type='class'
+                    )
+                    db.session.add(event)
+                    added += 1
+
+                db.session.commit()
+                unique_subjects = {}
+                for event in TimetableEvent.query.filter_by(
+                    user_id=current_user.id
+                ).all():
+                    if event.subject not in unique_subjects:
+                        unique_subjects[event.subject] = {
+                            'class_code': event.class_code,
+                            'teacher': event.teacher,
+                            'room': event.room
+                        }
+                from flask import session as flask_session
+                flask_session['pending_subjects'] = unique_subjects
+                flash(f'Imported {added} classes. Now select which subjects to add to your markbook.', 'success')
+                return redirect(url_for('setup_subjects'))
+            else:
+                flash('Please upload a valid .ics file.', 'error')
+
+        elif action == 'add_term':
+            name = request.form.get('term_name', '').strip()
+            start = request.form.get('term_start', '').strip()
+            end = request.form.get('term_end', '').strip()
+            if name and start and end:
+                term = Term(
+                    user_id=current_user.id,
+                    name=name,
+                    start_date=datetime.strptime(start, '%Y-%m-%d'),
+                    end_date=datetime.strptime(end, '%Y-%m-%d'),
+                    is_active=True
+                )
+                db.session.add(term)
+                db.session.commit()
+                flash(f'Term "{name}" added.', 'success')
+
+        elif action == 'set_active_term':
+            term_id = int(request.form.get('term_id'))
+            Term.query.filter_by(user_id=current_user.id).update({'is_active': False})
+            term = Term.query.filter_by(id=term_id, user_id=current_user.id).first()
+            if term:
+                term.is_active = True
+            db.session.commit()
+
+        elif action == 'add_custom_event':
+            title = request.form.get('title', '').strip()
+            start = request.form.get('start_time', '').strip()
+            end = request.form.get('end_time', '').strip()
+            event_type = request.form.get('event_type', 'event')
+            description = request.form.get('description', '').strip()
+            if title and start:
+                event = CustomEvent(
+                    user_id=current_user.id,
+                    title=title,
+                    description=description,
+                    start_time=datetime.strptime(start, '%Y-%m-%dT%H:%M'),
+                    end_time=datetime.strptime(end, '%Y-%m-%dT%H:%M') if end else None,
+                    event_type=event_type
+                )
+                db.session.add(event)
+                db.session.commit()
+                flash('Event added.', 'success')
+
+        return redirect(url_for('timetable'))
+
+    active_term = Term.query.filter_by(
+        user_id=current_user.id, is_active=True
+    ).first()
+    all_terms = Term.query.filter_by(user_id=current_user.id).all()
+
+    active_term = Term.query.filter_by(
+        user_id=current_user.id, is_active=True
+    ).first()
+    all_terms = Term.query.filter_by(user_id=current_user.id).all()
+
+    events = TimetableEvent.query.filter_by(
+        user_id=current_user.id
+    ).order_by(TimetableEvent.start_time).all()
+
+    from collections import defaultdict
+    import datetime as dt
+
+    all_events = TimetableEvent.query.filter_by(
+        user_id=current_user.id
+    ).order_by(TimetableEvent.start_time).all()
+
+    def get_week_key(d):
+        return d.isocalendar()[:2]
+
+    weeks = defaultdict(list)
+    for e in all_events:
+        wk = get_week_key(e.start_time)
+        weeks[wk].append(e)
+
+    best_week_key = max(weeks.keys(), key=lambda wk: len(set(
+        (e.day_of_week, e.period) for e in weeks[wk]
+    )))
+    representative_events = weeks[best_week_key]
+
+    seen = set()
+    unique_events = []
+    for e in representative_events:
+        key = (e.day_of_week, e.period, e.subject)
+        if key not in seen:
+            seen.add(key)
+            unique_events.append(e)
+
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+
+    period_order = ['Period 1', 'Period 2', 'Period 3', 'Period 4',
+                    'Period 5', 'Period 6', 'Period 7', 'Period 8']
+
+    periods_present = sorted(
+        set(e.period for e in unique_events if e.period),
+        key=lambda p: period_order.index(p) if p in period_order else 99
+    )
+
+    timetable_grid = {}
+    for period in periods_present:
+        timetable_grid[period] = {}
+        for i, day in enumerate(days):
+            match = next(
+                (e for e in unique_events if e.day_of_week == i and e.period == period),
+                None
+            )
+            timetable_grid[period][day] = match
+
+    custom_events = CustomEvent.query.filter_by(
+        user_id=current_user.id
+    ).order_by(CustomEvent.start_time).all()
+
+    return render_template('timetable.html',
+        timetable_grid=timetable_grid,
+        days=days,
+        periods=periods_present,
+        terms=all_terms,
+        active_term=active_term,
+        custom_events=custom_events
+    )
+
+@app.route('/timetable/setup-subjects', methods=['GET', 'POST'])
+@login_required
+def setup_subjects():
+    from flask import session as flask_session
+    pending = flask_session.get('pending_subjects', {})
+    
+    if request.method == 'POST':
+        selected = request.form.getlist('subjects')
+        for subject_name in selected:
+            existing = Subject.query.filter_by(
+                user_id=current_user.id,
+                name=subject_name
+            ).first()
+            if not existing and subject_name in pending:
+                info = pending[subject_name]
+                subject = Subject(
+                    user_id=current_user.id,
+                    name=subject_name,
+                    class_code=info.get('class_code', ''),
+                    teacher=info.get('teacher', ''),
+                    room=info.get('room', ''),
+                    is_graded=True
+                )
+                db.session.add(subject)
+        db.session.commit()
+        flask_session.pop('pending_subjects', None)
+        flash('Subjects added to your markbook.', 'success')
+        return redirect(url_for('timetable'))
+
+    return render_template('setup_subjects.html', pending=pending)
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    import json
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    if not settings:
+        settings = UserSettings(user_id=current_user.id)
+        db.session.add(settings)
+        db.session.commit()
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'save_general':
+            settings.school_name = request.form.get('school_name', '').strip()
+            settings.num_terms = int(request.form.get('num_terms', 4))
+            settings.year_level = request.form.get('year_level', '').strip()
+            settings.timezone = request.form.get('timezone', 'Australia/Sydney')
+            settings.updated_at = datetime.utcnow()
+            db.session.commit()
+            flash('Settings saved.', 'success')
+
+        elif action == 'save_grading':
+            grades = request.form.getlist('grade_label')
+            mins = request.form.getlist('grade_min')
+            maxs = request.form.getlist('grade_max')
+            scale = []
+            for label, mn, mx in zip(grades, mins, maxs):
+                if label.strip() and mn and mx:
+                    scale.append({
+                        'label': label.strip(),
+                        'min': float(mn),
+                        'max': float(mx)
+                    })
+            settings.grading_scale = json.dumps(scale)
+            settings.updated_at = datetime.utcnow()
+            db.session.commit()
+            flash('Grading scale saved.', 'success')
+
+        elif action == 'change_password':
+            current_pw = request.form.get('current_password', '')
+            new_pw = request.form.get('new_password', '')
+            if not bcrypt.checkpw(current_pw.encode('utf-8'), current_user.password.encode('utf-8')):
+                flash('Current password is incorrect.', 'error')
+            elif len(new_pw) < 8:
+                flash('New password must be at least 8 characters.', 'error')
+            else:
+                hashed = bcrypt.hashpw(new_pw.encode('utf-8'), bcrypt.gensalt())
+                current_user.password = hashed.decode('utf-8')
+                db.session.commit()
+                flash('Password updated.', 'success')
+
+        elif action == 'change_username':
+            new_username = request.form.get('new_username', '').strip()
+            if User.query.filter_by(username=new_username).first():
+                flash('That username is taken.', 'error')
+            elif len(new_username) < 3:
+                flash('Username must be at least 3 characters.', 'error')
+            else:
+                current_user.username = new_username
+                db.session.commit()
+                flash('Username updated.', 'success')
+
+        elif action == 'delete_account':
+            confirm = request.form.get('confirm_delete', '')
+            if confirm == current_user.username:
+                db.session.delete(current_user)
+                db.session.commit()
+                flash('Account deleted.', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Username did not match. Account not deleted.', 'error')
+
+        return redirect(url_for('settings'))
+
+    grading_scale = []
+    if settings.grading_scale:
+        import json
+        grading_scale = json.loads(settings.grading_scale)
+
+    subjects = Subject.query.filter_by(user_id=current_user.id).all()
+
+    return render_template('settings.html',
+        settings=settings,
+        grading_scale=grading_scale,
+        subjects=subjects
+    )
+
+@app.route('/settings/delete-subject/<int:subject_id>', methods=['POST'])
+@login_required
+def delete_subject(subject_id):
+    subject = Subject.query.filter_by(
+        id=subject_id, user_id=current_user.id
+    ).first_or_404()
+    db.session.delete(subject)
+    db.session.commit()
+    flash(f'Removed {subject.name} from markbook.', 'success')
+    return redirect(url_for('settings'))
 
 if __name__ == '__main__':
     app.run(debug=True)

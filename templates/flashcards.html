@@ -44,7 +44,7 @@
         </a>
         <div class="deck-actions">
             <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="deck-study-btn">Study</a>
-            <form method="POST" action="{{ url_for('flashcards') }}" style="display:inline">
+            <form method="POST" action="{{ url_for('flashcards') }}" style="display:inline" onsubmit="return confirm('Delete this card?')">
                 <input type="hidden" name="action" value="delete_deck">
                 <input type="hidden" name="deck_id" value="{{ deck.id }}">
                 <button type="submit" class="delete-btn">✕</button>

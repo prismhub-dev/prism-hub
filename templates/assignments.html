@@ -93,7 +93,7 @@
             </div>
         </div>
         <div class="assignment-row-right">
-            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline">
+            <form method="POST" action="{{ url_for('assignments') }}" style="display:inline" onsubmit="return confirm('Delete this assignment?')">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="assignment_id" value="{{ a.id }}">
                 <button type="submit" class="delete-btn">✕</button>

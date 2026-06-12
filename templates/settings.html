@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Settings — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1 class="page-title">Settings</h1>
+</div>
+
+<div class="settings-layout">
+
+    <div class="settings-section">
+        <h2 class="settings-section-title">General</h2>
+        <div class="card">
+            <form method="POST">
+                <input type="hidden" name="action" value="save_general">
+                <div class="form-group">
+                    <label>School name</label>
+                    <input type="text" name="school_name" value="{{ settings.school_name or '' }}" placeholder="e.g. Baulkham Hills High School">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Year level</label>
+                        <input type="text" name="year_level" value="{{ settings.year_level or '' }}" placeholder="e.g. Year 10">
+                    </div>
+                    <div class="form-group">
+                        <label>Number of terms</label>
+                        <select name="num_terms" class="form-select">
+                            {% for n in range(1, 7) %}
+                            <option value="{{ n }}" {% if settings.num_terms == n %}selected{% endif %}>{{ n }} terms</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Timezone</label>
+                    <select name="timezone" class="form-select">
+                        <option value="Australia/Sydney" {% if settings.timezone == 'Australia/Sydney' %}selected{% endif %}>Australia/Sydney</option>
+                        <option value="Australia/Melbourne" {% if settings.timezone == 'Australia/Melbourne' %}selected{% endif %}>Australia/Melbourne</option>
+                        <option value="Australia/Brisbane" {% if settings.timezone == 'Australia/Brisbane' %}selected{% endif %}>Australia/Brisbane</option>
+                        <option value="Australia/Perth" {% if settings.timezone == 'Australia/Perth' %}selected{% endif %}>Australia/Perth</option>
+                        <option value="Australia/Adelaide" {% if settings.timezone == 'Australia/Adelaide' %}selected{% endif %}>Australia/Adelaide</option>
+                        <option value="UTC" {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Save changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2 class="settings-section-title">Grading scale</h2>
+        <div class="card">
+            <p style="font-size:0.8rem;color:#6b7280;margin-bottom:1rem">Define grade boundaries. These apply to your weighted averages across all subjects.</p>
+            <form method="POST" id="grading-form">
+                <input type="hidden" name="action" value="save_grading">
+                <div id="grade-rows">
+                    {% if grading_scale %}
+                        {% for grade in grading_scale %}
+                        <div class="grade-row">
+                            <input type="text" name="grade_label" value="{{ grade.label }}" placeholder="e.g. A+" class="grade-input-label">
+                            <input type="number" name="grade_min" value="{{ grade.min }}" placeholder="Min" step="0.1" min="0" max="100" class="grade-input-num">
+                            <span class="grade-dash">–</span>
+                            <input type="number" name="grade_max" value="{{ grade.max }}" placeholder="Max" step="0.1" min="0" max="100" class="grade-input-num">
+                            <button type="button" class="delete-btn" onclick="this.parentElement.remove()">✕</button>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="grade-row">
+                            <input type="text" name="grade_label" value="A+" placeholder="e.g. A+" class="grade-input-label">
+                            <input type="number" name="grade_min" value="90" placeholder="Min" step="0.1" min="0" max="100" class="grade-input-num">
+                            <span class="grade-dash">–</span>
+                            <input type="number" name="grade_max" value="100" placeholder="Max" step="0.1" min="0" max="100" class="grade-input-num">
+                            <button type="button" class="delete-btn" onclick="this.parentElement.remove()">✕</button>
+                        </div>
+                    {% endif %}
+                </div>
+                <button type="button" class="btn-outline" style="margin:0.75rem 0" onclick="addGradeRow()">+ Add grade</button>
+                <br>
+                <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Save grading scale</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2 class="settings-section-title">Subjects</h2>
+        <div class="card">
+            <p style="font-size:0.8rem;color:#6b7280;margin-bottom:1rem">Manage which subjects appear in your markbook.</p>
+            {% if subjects %}
+            <div class="subject-settings-list">
+                {% for subject in subjects %}
+                <div class="subject-settings-row">
+                    <div>
+                        <p style="font-size:0.875rem;font-weight:500">{{ subject.name }}</p>
+                        <p style="font-size:0.75rem;color:#6b7280">{{ subject.class_code }}{% if subject.teacher %} · {{ subject.teacher }}{% endif %}</p>
+                    </div>
+                    <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" onsubmit="return confirm('Remove {{ subject.name }} from your markbook?')">
+                        <button type="submit" class="delete-btn">✕</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size:0.875rem;color:#6b7280">No subjects yet. Import a timetable to add subjects.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2 class="settings-section-title">Account</h2>
+        <div class="card">
+            <p style="font-size:0.8rem;color:#6b7280;margin-bottom:1rem">Logged in as <span style="color:#f3f4f6;font-weight:500">{{ current_user.username }}</span></p>
+            <form method="POST" style="margin-bottom:1.5rem">
+                <input type="hidden" name="action" value="change_username">
+                <div class="form-group">
+                    <label>New username</label>
+                    <input type="text" name="new_username" placeholder="Enter new username">
+                </div>
+                <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Update username</button>
+            </form>
+            <form method="POST" style="margin-bottom:1.5rem">
+                <input type="hidden" name="action" value="change_password">
+                <div class="form-group">
+                    <label>Current password</label>
+                    <input type="password" name="current_password" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label>New password</label>
+                    <input type="password" name="new_password" placeholder="Min. 8 characters">
+                </div>
+                <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Change password</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2 class="settings-section-title" style="color:#fca5a5">Danger zone</h2>
+        <div class="card" style="border-color:#991b1b">
+            <p style="font-size:0.875rem;color:#9ca3af;margin-bottom:1rem">Deleting your account is permanent. All data will be lost.</p>
+            <form method="POST" onsubmit="return confirm('This will permanently delete your account. Type your username to confirm.')">
+                <input type="hidden" name="action" value="delete_account">
+                <div class="form-group">
+                    <label>Type your username to confirm: <span style="color:#f3f4f6">{{ current_user.username }}</span></label>
+                    <input type="text" name="confirm_delete" placeholder="{{ current_user.username }}">
+                </div>
+                <button type="submit" class="btn-danger">Delete account</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addGradeRow() {
+    const row = document.createElement('div');
+    row.className = 'grade-row';
+    row.innerHTML = `
+        <input type="text" name="grade_label" placeholder="e.g. B" class="grade-input-label">
+        <input type="number" name="grade_min" placeholder="Min" step="0.1" min="0" max="100" class="grade-input-num">
+        <span class="grade-dash">–</span>
+        <input type="number" name="grade_max" placeholder="Max" step="0.1" min="0" max="100" class="grade-input-num">
+        <button type="button" class="delete-btn" onclick="this.parentElement.remove()">✕</button>
+    `;
+    document.getElementById('grade-rows').appendChild(row);
+}
+</script>
+{% endblock %}

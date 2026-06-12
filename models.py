@@ -61,3 +61,68 @@ class Flashcard(db.Model):
     last_reviewed = db.Column(db.DateTime, nullable=True)
     retention_score = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TimetableEvent(db.Model):
+    __tablename__ = 'timetable_events'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    term_id = db.Column(db.Integer, db.ForeignKey('terms.id'), nullable=True)
+    subject = db.Column(db.String(200), nullable=False)
+    class_code = db.Column(db.String(50), nullable=True)
+    teacher = db.Column(db.String(200), nullable=True)
+    room = db.Column(db.String(50), nullable=True)
+    period = db.Column(db.String(50), nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    day_of_week = db.Column(db.Integer, nullable=False)
+    is_manual = db.Column(db.Boolean, default=False)
+    event_type = db.Column(db.String(50), default='class')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Term(db.Model):
+    __tablename__ = 'terms'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class CustomEvent(db.Model):
+    __tablename__ = 'custom_events'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=True)
+    event_type = db.Column(db.String(50), default='event')
+    is_recurring = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Subject(db.Model):
+    __tablename__ = 'subjects'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    class_code = db.Column(db.String(50), nullable=True)
+    teacher = db.Column(db.String(200), nullable=True)
+    room = db.Column(db.String(50), nullable=True)
+    color = db.Column(db.String(20), default='#C9A84C')
+    is_graded = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class UserSettings(db.Model):
+    __tablename__ = 'user_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, unique=True)
+    school_name = db.Column(db.String(200), nullable=True)
+    num_terms = db.Column(db.Integer, default=4)
+    year_level = db.Column(db.String(20), nullable=True)
+    timezone = db.Column(db.String(50), default='Australia/Sydney')
+    theme = db.Column(db.String(20), default='dark')
+    notifications_enabled = db.Column(db.Boolean, default=False)
+    grading_scale = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

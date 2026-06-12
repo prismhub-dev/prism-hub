@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+{% block title %}Timetable — Prism Hub{% endblock %}
+{% block content %}
+
+<div id="confirm-modal" class="modal-overlay" style="display:none">
+    <div class="modal" style="max-width:360px;text-align:center">
+        <p class="modal-title" style="margin-bottom:0.5rem" id="confirm-message">Are you sure?</p>
+        <p style="font-size:0.8rem;color:#6b7280;margin-bottom:1.5rem" id="confirm-sub"></p>
+        <div style="display:flex;gap:0.75rem;justify-content:center">
+            <button class="btn-outline" onclick="closeConfirm()">Cancel</button>
+            <button class="btn-primary" style="width:auto;padding:0.625rem 1.5rem" id="confirm-ok" onclick="submitConfirmed()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Timetable</h1>
+        {% if active_term %}
+        <p class="deck-subject-label">{{ active_term.name }} · {{ active_term.start_date.strftime('%d %b') }} – {{ active_term.end_date.strftime('%d %b %Y') }}</p>
+        {% endif %}
+    </div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
+        <button class="btn-outline" onclick="document.getElementById('term-modal').style.display='flex'">+ Add term</button>
+        <button class="btn-outline" onclick="document.getElementById('import-modal').style.display='flex'">↑ Import ICS</button>
+        <button class="btn-outline" onclick="document.getElementById('event-modal').style.display='flex'">+ Custom event</button>
+    </div>
+</div>
+
+{% if terms %}
+<div class="term-tabs">
+    {% for term in terms %}
+    <form method="POST" style="display:inline">
+        <input type="hidden" name="action" value="set_active_term">
+        <input type="hidden" name="term_id" value="{{ term.id }}">
+        <button type="submit" class="term-tab {% if active_term and active_term.id == term.id %}active{% endif %}">
+            {{ term.name }}
+        </button>
+    </form>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div id="term-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Add term</h2>
+            <button class="modal-close" onclick="document.getElementById('term-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="add_term">
+            <div class="form-group">
+                <label>Term name</label>
+                <input type="text" name="term_name" placeholder="e.g. Term 2 2026" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start date</label>
+                    <input type="date" name="term_start" required>
+                </div>
+                <div class="form-group">
+                    <label>End date</label>
+                    <input type="date" name="term_end" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary">Add term</button>
+        </form>
+    </div>
+</div>
+
+<div id="import-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Import timetable</h2>
+            <button class="modal-close" onclick="document.getElementById('import-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="import_ics">
+            <div class="form-group" style="margin-top:0.5rem">
+                <label>Term</label>
+                <select name="term_id" class="form-select">
+                    <option value="">No term selected</option>
+                    {% for term in terms %}
+                    <option value="{{ term.id }}" {% if active_term and active_term.id == term.id %}selected{% endif %}>{{ term.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Timezone</label>
+                <select name="timezone" class="form-select">
+                    <option value="Australia/Sydney" selected>Australia/Sydney (AEST)</option>
+                    <option value="Australia/Melbourne">Australia/Melbourne</option>
+                    <option value="Australia/Brisbane">Australia/Brisbane</option>
+                    <option value="Australia/Perth">Australia/Perth</option>
+                    <option value="Australia/Adelaide">Australia/Adelaide</option>
+                    <option value="UTC">UTC</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>ICS file from Sentral</label>
+                <div class="file-upload-area" onclick="document.getElementById('ics-input').click()">
+                    <p class="file-upload-icon">↑</p>
+                    <p class="file-upload-text" id="file-upload-label">Click to choose .ics file</p>
+                    <p class="file-upload-sub">Exported from Sentral calendar</p>
+                </div>
+                <input type="file" id="ics-input" name="ics_file" accept=".ics" required style="display:none" onchange="updateFileLabel(this)">
+            </div>
+            <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1rem">This replaces any existing imported classes for the selected term.</p>
+            <button type="submit" class="btn-primary">Import timetable</button>
+        </form>
+    </div>
+</div>
+
+<div id="event-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Add custom event</h2>
+            <button class="modal-close" onclick="document.getElementById('event-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="add_custom_event">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" name="title" placeholder="e.g. Basketball training" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="event_type" class="form-select">
+                    <option value="extracurricular">Extracurricular</option>
+                    <option value="event">One-time event</option>
+                    <option value="reminder">Reminder</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Start</label>
+                    <input type="datetime-local" name="start_time" required>
+                </div>
+                <div class="form-group">
+                    <label>End</label>
+                    <input type="datetime-local" name="end_time">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Description (optional)</label>
+                <textarea name="description" class="form-textarea" placeholder="Details..."></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Add event</button>
+        </form>
+    </div>
+</div>
+
+{% if timetable_grid %}
+<div class="tt-grid">
+    {% for day in days %}
+    <div class="tt-day-col">
+        <div class="tt-day-header">{{ day }}</div>
+        {% for period in periods %}
+            {% set event = timetable_grid[period][day] %}
+            {% if event %}
+            <div class="tt-cell tt-cell-filled" 
+                 data-start="{{ event.start_time.strftime('%H:%M') }}"
+                 data-end="{{ event.end_time.strftime('%H:%M') }}">
+                <div class="tt-cell-main">
+                    <div class="tt-subject">{{ event.subject }}</div>
+                    <div class="tt-meta">{{ event.room }}</div>
+                </div>
+                <div class="tt-hover-detail">
+                    <div class="tt-hover-period">{{ event.period }}</div>
+                    <div class="tt-hover-time">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</div>
+                    {% if event.teacher %}
+                    <div class="tt-hover-teacher">{{ event.teacher }}</div>
+                    {% endif %}
+                </div>
+                <div class="tt-progress-bar">
+                    <div class="tt-progress-fill" data-start="{{ event.start_time.strftime('%H:%M') }}" data-end="{{ event.end_time.strftime('%H:%M') }}"></div>
+                </div>
+            </div>
+            {% else %}
+            <div class="tt-cell tt-cell-empty">
+                <div class="tt-empty-period">{{ period }}</div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:3rem">
+    <p>No timetable imported yet.</p>
+    <button class="btn-gold" style="margin-top:0.75rem" onclick="document.getElementById('import-modal').style.display='flex'">Import from Sentral</button>
+</div>
+{% endif %}
+
+{% if custom_events %}
+<h2 style="font-size:1rem;font-weight:600;margin:2rem 0 1rem">Custom events</h2>
+<div class="assignment-full-list">
+    {% for event in custom_events %}
+    <div class="assignment-row">
+        <div class="assignment-row-left">
+            <span class="priority-badge priority-2">{{ event.event_type }}</span>
+            <div>
+                <p class="assignment-title">{{ event.title }}</p>
+                <p class="assignment-subject">{{ event.start_time.strftime('%d %b %Y, %H:%M') }}{% if event.end_time %} – {{ event.end_time.strftime('%H:%M') }}{% endif %}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateFileLabel(input) {
+    const label = document.getElementById('file-upload-label');
+    if (input.files && input.files[0]) {
+        label.textContent = input.files[0].name;
+        label.style.color = '#C9A84C';
+    }
+}
+
+let pendingForm = null;
+
+function confirmDelete(formEl, message, sub) {
+    pendingForm = formEl;
+    document.getElementById('confirm-message').textContent = message || 'Are you sure?';
+    document.getElementById('confirm-sub').textContent = sub || '';
+    document.getElementById('confirm-modal').style.display = 'flex';
+}
+
+function closeConfirm() {
+    document.getElementById('confirm-modal').style.display = 'none';
+    pendingForm = null;
+}
+
+function submitConfirmed() {
+    if (pendingForm) pendingForm.submit();
+    closeConfirm();
+}
+</script>
+{% endblock %}

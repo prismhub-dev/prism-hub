@@ -107,7 +107,7 @@
                 <div class="mark-right">
                     <span class="mark-score">{{ m.mark }}/{{ m.max_mark }}</span>
                     <span class="mark-pct">{{ (m.mark / m.max_mark * 100) | round(1) }}%</span>
-                    <form method="POST" action="{{ url_for('marks') }}" style="display:inline">
+                    <form method="POST" action="{{ url_for('marks') }}" style="display:inline" onsubmit="return confirm('Delete this mark?')">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="mark_id" value="{{ m.id }}">
                         <button type="submit" class="delete-btn">✕</button>
