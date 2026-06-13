@@ -26,7 +26,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label>Mark</label>
-                    <input type="number" name="mark" placeholder="e.g. 18" step="0.01" required>
+                    <input type="number" name="mark" placeholder="e.g. 18" step="1" required>
                 </div>
                 <div class="form-group">
                     <label>Out of</label>
@@ -52,6 +52,16 @@
                 </div>
             </div>
             <div class="form-group">
+                <label>Assessment type</label>
+                <select name="assessment_type" class="form-select">
+                    <option value="internal">Internal</option>
+                    <option value="external">External</option>
+                    <option value="trial">Trial</option>
+                    <option value="practical">Practical</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label>Feedback (optional)</label>
                 <textarea name="feedback" class="form-textarea" placeholder="Teacher feedback..."></textarea>
             </div>
@@ -59,6 +69,78 @@
         </form>
     </div>
 </div>
+
+<div id="edit-mark-modal" class="modal-overlay" style="display:none">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">Edit mark</h2>
+            <button class="modal-close" onclick="document.getElementById('edit-mark-modal').style.display='none'">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('marks') }}" id="edit-mark-form">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="mark_id" id="edit-mark-id">
+            <div class="form-group">
+                <label>Subject</label>
+                <input type="text" name="subject" id="edit-subject" required>
+            </div>
+            <div class="form-group">
+                <label>Assessment name</label>
+                <input type="text" name="assessment_name" id="edit-assessment-name" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mark</label>
+                    <input type="number" name="mark" id="edit-mark" step="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Out of</label>
+                    <input type="number" name="max_mark" id="edit-max-mark" step="1" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Weighting (% or fraction)</label>
+                <input type="text" name="weight" id="edit-weight" required>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="date" id="edit-date">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Class mean</label>
+                    <input type="number" name="mean" id="edit-mean" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Class median</label>
+                    <input type="number" name="median" id="edit-median" step="0.01">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Feedback</label>
+                <textarea name="feedback" id="edit-feedback" class="form-textarea"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Save changes</button>
+        </form>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function openEditMark(id, subject, name, mark, maxMark, weight, date, mean, median, feedback) {
+    document.getElementById('edit-mark-id').value = id;
+    document.getElementById('edit-subject').value = subject;
+    document.getElementById('edit-assessment-name').value = name;
+    document.getElementById('edit-mark').value = mark;
+    document.getElementById('edit-max-mark').value = maxMark;
+    document.getElementById('edit-weight').value = weight;
+    document.getElementById('edit-date').value = date;
+    document.getElementById('edit-mean').value = mean || '';
+    document.getElementById('edit-median').value = median || '';
+    document.getElementById('edit-feedback').value = feedback || '';
+    document.getElementById('edit-mark-modal').style.display = 'flex';
+}
+</script>
+{% endblock %}
 
 {% if subjects %}
     {% for subject, marks in subjects.items() %}
@@ -107,6 +189,7 @@
                 <div class="mark-right">
                     <span class="mark-score">{{ m.mark }}/{{ m.max_mark }}</span>
                     <span class="mark-pct">{{ (m.mark / m.max_mark * 100) | round(1) }}%</span>
+                    <button class="edit-btn" onclick="openEditMark({{ m.id }}, '{{ m.subject }}', '{{ m.assessment_name }}', {{ m.mark }}, {{ m.max_mark }}, {{ m.weight }}, '{{ m.date.strftime('%Y-%m-%d') }}', {{ m.mean or 'null' }}, {{ m.median or 'null' }}, `{{ m.feedback or '' }}`)">✎</button>
                     <form method="POST" action="{{ url_for('marks') }}" style="display:inline" onsubmit="return confirm('Delete this mark?')">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="mark_id" value="{{ m.id }}">

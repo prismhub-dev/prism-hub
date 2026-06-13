@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }} — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('assignments') }}" class="back-link">← Assignments</a>
+        <h1 class="page-title" style="margin-top:0.25rem">{{ assignment.title }}</h1>
+        <p class="deck-subject-label">{{ assignment.subject }} · Due {{ assignment.due_date.strftime('%d %b %Y') }}</p>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:900px">
+
+    <div>
+        <div class="section-label">Edit details</div>
+        <div class="card">
+            <form method="POST">
+                <input type="hidden" name="action" value="edit">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" name="title" value="{{ assignment.title }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" name="subject" value="{{ assignment.subject }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Due date <span style="color:#6b7280;font-weight:400;font-size:0.75rem">(when it's due)</span></label>
+                    <input type="date" name="due_date" value="{{ assignment.due_date.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select name="priority" class="form-select">
+                        <option value="1" {% if assignment.priority == 1 %}selected{% endif %}>Low</option>
+                        <option value="2" {% if assignment.priority == 2 %}selected{% endif %}>Medium</option>
+                        <option value="3" {% if assignment.priority == 3 %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Save changes</button>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+            <span>Checklist</span>
+            {% if assignment.tasks %}
+            {% set done = assignment.tasks | selectattr('completed') | list | length %}
+            {% set total = assignment.tasks | length %}
+            <span style="font-size:0.75rem;color:#6b7280">{{ done }}/{{ total }}</span>
+            {% endif %}
+        </div>
+        
+        {% if assignment.tasks %}
+        <div class="task-progress-bar" style="margin-bottom:0.75rem">
+            {% set done = assignment.tasks | selectattr('completed') | list | length %}
+            {% set total = assignment.tasks | length %}
+            <div class="task-progress-fill" style="width:{{ (done / total * 100) | round(0) }}%"></div>
+        </div>
+        {% endif %}
+
+        <div class="card" style="margin-bottom:0.75rem">
+            {% if assignment.tasks %}
+            <div class="task-list">
+                {% for task in assignment.tasks %}
+                <div class="task-row">
+                    <form method="POST" style="display:flex;align-items:center;gap:0.75rem;flex:1">
+                        <input type="hidden" name="action" value="toggle_task">
+                        <input type="hidden" name="task_id" value="{{ task.id }}">
+                        <button type="submit" class="check-btn {% if task.completed %}done{% endif %}">
+                            {% if task.completed %}✓{% else %}○{% endif %}
+                        </button>
+                        <span style="font-size:0.875rem;{% if task.completed %}text-decoration:line-through;opacity:0.5{% endif %}">{{ task.title }}</span>
+                    </form>
+                    <form method="POST" style="display:inline" onsubmit="return confirm('Delete task?')">
+                        <input type="hidden" name="action" value="delete_task">
+                        <input type="hidden" name="task_id" value="{{ task.id }}">
+                        <button type="submit" class="delete-btn">✕</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="font-size:0.875rem;color:#6b7280;padding:0.5rem 0">No tasks yet.</p>
+            {% endif %}
+        </div>
+
+        <form method="POST" style="display:flex;gap:0.5rem">
+            <input type="hidden" name="action" value="add_task">
+            <input type="text" name="task_title" placeholder="Add a task..." style="flex:1;background:#2a2a2a;border:1px solid #333;border-radius:0.375rem;padding:0.5rem 0.75rem;color:#f3f4f6;font-size:0.875rem;outline:none">
+            <button type="submit" class="btn-gold" style="padding:0.5rem 1rem;white-space:nowrap">+ Add</button>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -24,7 +24,7 @@
                 <input type="text" name="subject" placeholder="e.g. Enterprise Computing" required>
             </div>
             <div class="form-group">
-                <label>Due date</label>
+                <label>Due date <span style="color:#6b7280;font-weight:400;font-size:0.75rem">(when it's due, not when you got it)</span></label>
                 <input type="date" name="due_date" required>
             </div>
             <div class="form-group">
@@ -93,6 +93,7 @@
             </div>
         </div>
         <div class="assignment-row-right">
+            <a href="{{ url_for('edit_assignment', assignment_id=a.id) }}" class="edit-btn" style="text-decoration:none">✎</a>
             <form method="POST" action="{{ url_for('assignments') }}" style="display:inline" onsubmit="return confirm('Delete this assignment?')">
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="assignment_id" value="{{ a.id }}">

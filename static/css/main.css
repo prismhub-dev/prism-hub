@@ -169,6 +169,9 @@
   .flex {
     display: flex;
   }
+  .grid {
+    display: grid;
+  }
   .hidden {
     display: none;
   }
@@ -1386,6 +1389,165 @@
   }
   .card-answer-spoiler.revealed {
     background: #333;
+  }
+  .analytics-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .analytics-subject-card {
+    background: #242424;
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+  }
+  .analytics-subject-name {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .analytics-subject-avg {
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .analytics-subject-grade {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-bottom: 0.75rem;
+  }
+  .analytics-avg-bar {
+    position: relative;
+    height: 4px;
+    background: #333;
+    border-radius: 99px;
+    overflow: visible;
+  }
+  .analytics-avg-fill {
+    height: 100%;
+    background: #C9A84C;
+    border-radius: 99px;
+    max-width: 100%;
+  }
+  .analytics-benchmark-line {
+    position: absolute;
+    top: -4px;
+    width: 1px;
+    height: 12px;
+    background: rgba(239,68,68,0.5);
+    transform: translateX(-50%);
+  }
+  .analytics-charts {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .analytics-chart-card {
+    background: #242424;
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+  }
+  .analytics-chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .analytics-chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .analytics-chart-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 2px;
+  }
+  .legend-label {
+    margin-right: 0.5rem;
+  }
+  .analytics-chart-wrap {
+    position: relative;
+  }
+  .edit-btn {
+    background: none;
+    border: none;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .edit-btn:hover {
+    color: #C9A84C;
+  }
+  .analytics-subject-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.25rem;
+  }
+  .analytics-expand-btn {
+    background: none;
+    border: none;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 2px 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+  }
+  .analytics-expand-btn:hover {
+    color: #C9A84C;
+  }
+  .analytics-subject-options {
+    border-top: 1px solid #333;
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+  }
+  .task-progress-bar {
+    height: 4px;
+    background: #333;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .task-progress-fill {
+    height: 100%;
+    background: #C9A84C;
+    border-radius: 99px;
+    transition: width 0.3s ease;
+  }
+  .task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .task-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .task-row:last-child {
+    border-bottom: none;
   }
 }
 @property --tw-rotate-x {

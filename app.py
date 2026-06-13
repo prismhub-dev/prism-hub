@@ -201,6 +201,7 @@ def marks():
                     mark=float(mark),
                     max_mark=float(max_mark),
                     weight=weight,
+                    assessment_type = request.form.get('assessment_type', 'internal'),
                     date=date
                 )
                 db.session.add(new_mark)
@@ -221,6 +222,32 @@ def marks():
                 db.session.delete(m)
                 db.session.commit()
                 flash('Mark deleted.', 'success')
+            
+        elif action == 'edit':
+            mark_id = int(request.form.get('mark_id'))
+            m = Mark.query.filter_by(id=mark_id, user_id=current_user.id).first()
+            if m:
+                weight_raw = request.form.get('weight', '').strip()
+                if '/' in weight_raw:
+                    parts = weight_raw.split('/')
+                    weight = (float(parts[0]) / float(parts[1])) * 100
+                else:
+                    weight = float(weight_raw.replace('%', ''))
+                m.subject = request.form.get('subject', m.subject).strip()
+                m.assessment_name = request.form.get('assessment_name', m.assessment_name).strip()
+                m.mark = float(request.form.get('mark', m.mark))
+                m.max_mark = float(request.form.get('max_mark', m.max_mark))
+                m.weight = weight
+                date_str = request.form.get('date', '').strip()
+                if date_str:
+                    m.date = datetime.strptime(date_str, '%Y-%m-%d')
+                mean_val = request.form.get('mean', '').strip()
+                median_val = request.form.get('median', '').strip()
+                m.mean = float(mean_val) if mean_val else None
+                m.median = float(median_val) if median_val else None
+                m.feedback = request.form.get('feedback', '').strip()
+                db.session.commit()
+                flash('Mark updated.', 'success')
 
         return redirect(url_for('marks'))
 
@@ -737,6 +764,127 @@ def delete_subject(subject_id):
     db.session.commit()
     flash(f'Removed {subject.name} from markbook.', 'success')
     return redirect(url_for('settings'))
+
+@app.route('/analytics')
+@login_required
+def analytics():
+    import json
+    all_marks = Mark.query.filter_by(
+        user_id=current_user.id
+    ).order_by(Mark.date).all()
+
+    subjects = {}
+    for m in all_marks:
+        if m.subject not in subjects:
+            subjects[m.subject] = []
+        subjects[m.subject].append(m)
+
+    subject_averages = {}
+    for subject, marks in subjects.items():
+        active = [m for m in marks if m.active]
+        if active:
+            weighted_sum = sum((m.mark / m.max_mark) * m.weight for m in active)
+            total_weight = sum(m.weight for m in active)
+            avg = round((weighted_sum / total_weight) * 100, 1) if total_weight else 0
+            subject_averages[subject] = avg
+
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    grading_scale = []
+    if settings and settings.grading_scale:
+        grading_scale = json.loads(settings.grading_scale)
+
+    def get_grade(score):
+        for g in sorted(grading_scale, key=lambda x: x['min'], reverse=True):
+            if score >= g['min']:
+                return g['label']
+        return '—'
+
+    chart_data = {}
+    for subject, marks in subjects.items():
+        active = [m for m in marks if m.active]
+        chart_data[subject] = {
+            'labels': [m.assessment_name for m in active],
+            'raw': [round(m.mark / m.max_mark * 100, 1) for m in active],
+            'weighted': [round(m.mark / m.max_mark * m.weight, 1) for m in active],
+            'mean': [m.mean if m.mean else None for m in active],
+            'dates': [m.date.strftime('%d %b') for m in active],
+            'average': subject_averages.get(subject, 0),
+            'grade': get_grade(subject_averages.get(subject, 0))
+        }
+
+    return render_template('analytics.html',
+        subjects=subjects,
+        subject_averages=subject_averages,
+        chart_data=json.dumps(chart_data),
+        grading_scale=grading_scale,
+        get_grade=get_grade
+    )
+
+@app.route('/analytics/set-benchmark', methods=['POST'])
+@login_required
+def set_subject_benchmark():
+    subject_name = request.form.get('subject_name', '').strip()
+    benchmark = request.form.get('benchmark', '').strip()
+    subject = Subject.query.filter_by(
+        user_id=current_user.id, name=subject_name
+    ).first()
+    if subject and benchmark:
+        subject.benchmark = float(benchmark)
+        db.session.commit()
+        flash(f'Benchmark set for {subject_name}.', 'success')
+    return redirect(url_for('analytics'))
+
+@app.route('/assignments/<int:assignment_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_assignment(assignment_id):
+    assignment = Assignment.query.filter_by(
+        id=assignment_id, user_id=current_user.id
+    ).first_or_404()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'edit':
+            assignment.title = request.form.get('title', assignment.title).strip()
+            assignment.subject = request.form.get('subject', assignment.subject).strip()
+            due_date_str = request.form.get('due_date', '').strip()
+            if due_date_str:
+                assignment.due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+            assignment.priority = int(request.form.get('priority', assignment.priority))
+            db.session.commit()
+            flash('Assignment updated.', 'success')
+        
+        elif action == 'add_task':
+            title = request.form.get('task_title', '').strip()
+            if title:
+                task = AssignmentTask(
+                    assignment_id=assignment.id,
+                    title=title
+                )
+                db.session.add(task)
+                db.session.commit()
+        
+        elif action == 'toggle_task':
+            task_id = int(request.form.get('task_id'))
+            task = AssignmentTask.query.filter_by(
+                id=task_id, assignment_id=assignment.id
+            ).first()
+            if task:
+                task.completed = not task.completed
+                db.session.commit()
+        
+        elif action == 'delete_task':
+            task_id = int(request.form.get('task_id'))
+            task = AssignmentTask.query.filter_by(
+                id=task_id, assignment_id=assignment.id
+            ).first()
+            if task:
+                db.session.delete(task)
+                db.session.commit()
+        
+        return redirect(url_for('edit_assignment', assignment_id=assignment.id))
+    
+    return render_template('edit_assignment.html', assignment=assignment)
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -26,6 +26,7 @@ class Assignment(db.Model):
     due_date = db.Column(db.DateTime, nullable=False)
     priority = db.Column(db.Integer, default=2)
     completed = db.Column(db.Boolean, default=False)
+    tasks = db.relationship('AssignmentTask', backref='assignment', lazy=True, cascade='all, delete-orphan')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Mark(db.Model):
@@ -41,6 +42,7 @@ class Mark(db.Model):
     mean = db.Column(db.Float, nullable=True)
     median = db.Column(db.Float, nullable=True)
     feedback = db.Column(db.Text, nullable=True)
+    assessment_type = db.Column(db.String(50), default='internal')
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class FlashcardDeck(db.Model):
@@ -111,6 +113,7 @@ class Subject(db.Model):
     room = db.Column(db.String(50), nullable=True)
     color = db.Column(db.String(20), default='#C9A84C')
     is_graded = db.Column(db.Boolean, default=True)
+    benchmark = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class UserSettings(db.Model):
@@ -126,3 +129,11 @@ class UserSettings(db.Model):
     grading_scale = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class AssignmentTask(db.Model):
+    __tablename__ = 'assignment_tasks'
+    id = db.Column(db.Integer, primary_key=True)
+    assignment_id = db.Column(db.Integer, db.ForeignKey('assignments.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    completed = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
