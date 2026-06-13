@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Study Planner — Prism Hub{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Study Planner</h1>
+        <p class="dashboard-sub">AI-powered recommendations based on your marks and upcoming assessments</p>
+    </div>
+    {% if user.streak and user.streak > 0 %}
+    <p class="streak-display" style="font-size:1rem">🔥 {{ user.streak }} day streak</p>
+    {% endif %}
+</div>
+
+{% if recommendations %}
+<div style="display:flex;flex-direction:column;gap:1rem">
+    {% for rec in recommendations %}
+    <div class="card" style="border-left: 3px solid 
+        {% if rec.priority == 'critical' %}#ef4444
+        {% elif rec.priority == 'high' %}#f97316
+        {% elif rec.priority == 'medium' %}#C9A84C
+        {% else %}#4ade80{% endif %};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+            <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem">
+                    <span style="font-size:0.875rem;font-weight:600;color:#f3f4f6">{{ rec.subject }}</span>
+                    <span style="font-size:0.65rem;font-weight:600;padding:0.15rem 0.6rem;border-radius:99px;text-transform:uppercase;letter-spacing:0.05em;
+                        {% if rec.priority == 'critical' %}background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)
+                        {% elif rec.priority == 'high' %}background:rgba(249,115,22,0.15);color:#fdba74;border:1px solid rgba(249,115,22,0.3)
+                        {% elif rec.priority == 'medium' %}background:rgba(201,168,76,0.15);color:#C9A84C;border:1px solid rgba(201,168,76,0.3)
+                        {% else %}background:rgba(74,222,128,0.1);color:#4ade80;border:1px solid rgba(74,222,128,0.2){% endif %}">
+                        {{ rec.priority }}
+                    </span>
+                </div>
+                {% if rec.assignment %}
+                <p style="font-size:0.8rem;color:#6b7280;margin-bottom:0.5rem">
+                    📋 {{ rec.assignment }}{% if rec.due_in_days is not none %} · due in {{ rec.due_in_days }} day{{ 's' if rec.due_in_days != 1 }}{% endif %}
+                </p>
+                {% endif %}
+                <p style="font-size:0.875rem;color:#d1d5db;line-height:1.5">{{ rec.tip }}</p>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+                {% if rec.average %}
+                <p style="font-size:1.5rem;font-weight:600;color:#C9A84C">{{ rec.average }}%</p>
+                <p style="font-size:0.7rem;color:#6b7280">current avg</p>
+                {% endif %}
+            </div>
+        </div>
+        <div style="margin-top:0.875rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+            <a href="{{ url_for('flashcards') }}" class="btn-outline" style="font-size:0.75rem;padding:0.3rem 0.875rem">Study flashcards</a>
+            <a href="{{ url_for('marks') }}" class="btn-outline" style="font-size:0.75rem;padding:0.3rem 0.875rem">View marks</a>
+            <a href="{{ url_for('assignments') }}" class="btn-outline" style="font-size:0.75rem;padding:0.3rem 0.875rem">Assignments</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="margin-top:4rem">
+    <p>No recommendations yet — log some marks and assignments first.</p>
+    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem">
+        <a href="{{ url_for('marks') }}" class="btn-gold">Log marks</a>
+        <a href="{{ url_for('assignments') }}" class="btn-outline">Add assignments</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

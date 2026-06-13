@@ -1,11 +1,12 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
-from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings
+from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask
 import os
 from dotenv import load_dotenv
 import bcrypt
 from datetime import datetime, timezone
 import csv, io
+from study_engine import get_study_recommendations
 
 load_dotenv()
 
@@ -81,10 +82,11 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# ─── Protected routes (placeholders for now) ─────────────────────
+# ─── Protected routes (placeholders no longer) ─────────────────────
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    from datetime import datetime, timezone
     assignments = Assignment.query.filter_by(
         user_id=current_user.id, completed=False
     ).order_by(Assignment.due_date).limit(5).all()
@@ -92,11 +94,38 @@ def dashboard():
     
     weighted_avg = 0
     if marks:
-        weighted_sum = sum((m.mark / m.max_mark) * m.weight for m in marks)
-        total_weight = sum(m.weight for m in marks)
-        weighted_avg = round((weighted_sum / total_weight) * 100, 1) if total_weight else 0
+        active = [m for m in marks if m.active]
+        if active:
+            weighted_sum = sum((m.mark / m.max_mark) * m.weight for m in active)
+            total_weight = sum(m.weight for m in active)
+            weighted_avg = round((weighted_sum / total_weight) * 100, 1) if total_weight else 0
 
     decks = FlashcardDeck.query.filter_by(user_id=current_user.id).count()
+    
+    # Today's classes
+    today = datetime.now(timezone.utc)
+    today_weekday = today.weekday()  # 0=Monday
+    all_events = TimetableEvent.query.filter_by(user_id=current_user.id).all()
+    
+    from collections import defaultdict
+    weeks = defaultdict(list)
+    for e in all_events:
+        wk = e.start_time.isocalendar()[:2]
+        weeks[wk].append(e)
+    
+    today_classes = []
+    if weeks:
+        best_week_key = max(weeks.keys(), key=lambda wk: len(set(
+            (e.day_of_week, e.period) for e in weeks[wk]
+        )))
+        representative = weeks[best_week_key]
+        seen = set()
+        for e in sorted(representative, key=lambda x: x.start_time):
+            if e.day_of_week == today_weekday:
+                key = (e.day_of_week, e.period, e.subject)
+                if key not in seen:
+                    seen.add(key)
+                    today_classes.append(e)
     
     return render_template('dashboard.html',
         user=current_user,
@@ -104,6 +133,7 @@ def dashboard():
         weighted_avg=weighted_avg,
         mark_count=len(marks),
         deck_count=decks,
+        today_classes=today_classes,
         now=datetime.now(timezone.utc)
     )
 
@@ -396,7 +426,7 @@ def quiz_complete(deck_id):
     data = request.get_json()
     today = datetime.now(timezone.utc).date()
     user = current_user
-    
+
     last = user.last_studied
     if last:
         last_date = last.date() if hasattr(last, 'date') else last
@@ -407,8 +437,15 @@ def quiz_complete(deck_id):
             user.streak = 1
     else:
         user.streak = 1
-    
+
     user.last_studied = datetime.now(timezone.utc)
+
+    # Set retention quiz due in 3 days
+    deck = FlashcardDeck.query.filter_by(id=deck_id, user_id=current_user.id).first()
+    if deck:
+        deck.last_completed = datetime.now(timezone.utc)
+        deck.retention_due = datetime.now(timezone.utc) + timedelta(days=3)
+
     db.session.commit()
     return jsonify({'streak': user.streak})
 
@@ -559,11 +596,6 @@ def timetable():
                 flash('Event added.', 'success')
 
         return redirect(url_for('timetable'))
-
-    active_term = Term.query.filter_by(
-        user_id=current_user.id, is_active=True
-    ).first()
-    all_terms = Term.query.filter_by(user_id=current_user.id).all()
 
     active_term = Term.query.filter_by(
         user_id=current_user.id, is_active=True
@@ -885,6 +917,41 @@ def edit_assignment(assignment_id):
         return redirect(url_for('edit_assignment', assignment_id=assignment.id))
     
     return render_template('edit_assignment.html', assignment=assignment)
+
+@app.route('/study')
+@login_required
+def study():
+    all_marks = Mark.query.filter_by(user_id=current_user.id).all()
+    pending_assignments = Assignment.query.filter_by(
+        user_id=current_user.id, completed=False
+    ).order_by(Assignment.due_date).all()
+    decks = FlashcardDeck.query.filter_by(user_id=current_user.id).all()
+    
+    recommendations = get_study_recommendations(
+        all_marks, pending_assignments, decks, current_user.streak or 0
+    )
+    
+    return render_template('study.html',
+        recommendations=recommendations,
+        user=current_user
+    )
+
+@app.route('/retention-check')
+@login_required
+def retention_check():
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    due_decks = FlashcardDeck.query.filter(
+        FlashcardDeck.user_id == current_user.id,
+        FlashcardDeck.retention_due <= now,
+        FlashcardDeck.retention_due != None
+    ).all()
+    return jsonify([{
+        'id': d.id,
+        'name': d.name,
+        'subject': d.subject,
+        'due': d.retention_due.isoformat()
+    } for d in due_decks])
 
 if __name__ == '__main__':
     app.run(debug=True)

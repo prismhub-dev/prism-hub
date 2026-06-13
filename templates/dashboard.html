@@ -9,6 +9,18 @@
     </div>
 </div>
 
+<div id="retention-banner" style="display:none;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
+        <div>
+            <p style="font-size:0.875rem;font-weight:600;color:#C9A84C;margin-bottom:0.25rem">🧠 Retention check due</p>
+            <p style="font-size:0.8rem;color:#9ca3af" id="retention-text">Some of your flashcard decks are ready for a retention quiz.</p>
+        </div>
+        <div id="retention-links" style="display:flex;gap:0.5rem;flex-wrap:wrap"></div>
+    </div>
+</div>
+
+{% block scripts %}{% endblock %}
+
 <div class="stats-grid">
     <div class="stat-card">
         <p class="stat-label">Weighted Average</p>
@@ -76,7 +88,7 @@
                 <span class="action-icon">🃏</span>
                 <span>Study flashcards</span>
             </a>
-            <a href="{{ url_for('marks') }}" class="action-btn">
+            <a href="{{ url_for('analytics') }}" class="action-btn">
                 <span class="action-icon">📈</span>
                 <span>View analytics</span>
             </a>
@@ -84,4 +96,46 @@
     </div>
 </div>
 
+{% if today_classes %}
+<div class="card" style="margin-top:1.5rem">
+    <div class="card-header">
+        <h2 class="card-title">Today's classes</h2>
+        <a href="{{ url_for('timetable') }}" class="card-link">Full timetable</a>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
+        {% for event in today_classes %}
+        <div style="background:#2a2a2a;border:1px solid #333;border-radius:0.5rem;padding:0.75rem 1rem;min-width:140px">
+            <p style="font-size:0.7rem;color:#6b7280;margin-bottom:0.25rem">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</p>
+            <p style="font-size:0.875rem;font-weight:500;color:#f3f4f6">{{ event.subject }}</p>
+            {% if event.room %}<p style="font-size:0.7rem;color:#6b7280;margin-top:0.125rem">{{ event.room }}</p>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+fetch('/retention-check')
+    .then(r => r.json())
+    .then(decks => {
+        if (!decks.length) return;
+        document.getElementById('retention-banner').style.display = 'block';
+        const count = decks.length;
+        document.getElementById('retention-text').textContent = 
+            `${count} deck${count !== 1 ? 's are' : ' is'} ready for a 3-day retention quiz.`;
+        const linksEl = document.getElementById('retention-links');
+        decks.slice(0, 3).forEach(d => {
+            const a = document.createElement('a');
+            a.href = `/flashcards/${d.id}/quiz`;
+            a.className = 'btn-gold';
+            a.style.cssText = 'font-size:0.75rem;padding:0.3rem 0.875rem;display:inline-block';
+            a.textContent = d.name;
+            linksEl.appendChild(a);
+        });
+    })
+    .catch(() => {});
+</script>
 {% endblock %}

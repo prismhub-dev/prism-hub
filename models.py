@@ -52,6 +52,8 @@ class FlashcardDeck(db.Model):
     name = db.Column(db.String(200), nullable=False)
     subject = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_completed = db.Column(db.DateTime, nullable=True)      # ← add
+    retention_due = db.Column(db.DateTime, nullable=True)       # ← add
     cards = db.relationship('Flashcard', backref='deck', lazy=True)
 
 class Flashcard(db.Model):

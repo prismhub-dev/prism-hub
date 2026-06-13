@@ -124,24 +124,6 @@
     </div>
 </div>
 
-{% block scripts %}
-<script>
-function openEditMark(id, subject, name, mark, maxMark, weight, date, mean, median, feedback) {
-    document.getElementById('edit-mark-id').value = id;
-    document.getElementById('edit-subject').value = subject;
-    document.getElementById('edit-assessment-name').value = name;
-    document.getElementById('edit-mark').value = mark;
-    document.getElementById('edit-max-mark').value = maxMark;
-    document.getElementById('edit-weight').value = weight;
-    document.getElementById('edit-date').value = date;
-    document.getElementById('edit-mean').value = mean || '';
-    document.getElementById('edit-median').value = median || '';
-    document.getElementById('edit-feedback').value = feedback || '';
-    document.getElementById('edit-mark-modal').style.display = 'flex';
-}
-</script>
-{% endblock %}
-
 {% if subjects %}
     {% for subject, marks in subjects.items() %}
     {% set active_marks = marks | selectattr('active') | list %}
@@ -208,4 +190,22 @@ function openEditMark(id, subject, name, mark, maxMark, weight, date, mean, medi
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEditMark(id, subject, name, mark, maxMark, weight, date, mean, median, feedback) {
+    document.getElementById('edit-mark-id').value = id;
+    document.getElementById('edit-subject').value = subject;
+    document.getElementById('edit-assessment-name').value = name;
+    document.getElementById('edit-mark').value = mark;
+    document.getElementById('edit-max-mark').value = maxMark;
+    document.getElementById('edit-weight').value = weight;
+    document.getElementById('edit-date').value = date;
+    document.getElementById('edit-mean').value = mean || '';
+    document.getElementById('edit-median').value = median || '';
+    document.getElementById('edit-feedback').value = feedback || '';
+    document.getElementById('edit-mark-modal').style.display = 'flex';
+}
+</script>
 {% endblock %}

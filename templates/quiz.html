@@ -30,6 +30,10 @@
         </div>
     </div>
 
+    <p style="text-align:center;font-size:0.75rem;color:#4b5563;margin-bottom:1rem">
+        Space / ↑↓ to flip &nbsp;·&nbsp; ← wrong &nbsp;·&nbsp; → correct
+    </p>
+
     <div class="quiz-controls" id="quiz-controls" style="display:none">
         <button class="quiz-btn quiz-wrong" onclick="nextCard(false)">✕ Got it wrong</button>
         <button class="quiz-btn quiz-correct" onclick="nextCard(true)">✓ Got it right</button>
@@ -116,6 +120,23 @@ function restartQuiz() {
 }
 
 loadCard();
+
+document.addEventListener('keydown', function(e) {
+    if (document.getElementById('quiz-results').style.display !== 'none') return;
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (!flipped) {
+            flipCard();
+        }
+    } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (flipped) nextCard(false);
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (flipped) nextCard(true);
+    }
+});
+
 </script>
 {% else %}
 <div class="empty-state" style="margin-top:4rem">
