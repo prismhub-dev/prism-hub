@@ -86,9 +86,12 @@
     {% for card in cards %}
     <div class="card-row">
         <div class="card-row-content">
-            <div class="card-question">{{ card.question }}</div>
-            <div class="card-answer">{{ card.answer }}</div>
+        <div class="card-question">{{ card.question }}</div>
+        <div class="card-answer-spoiler" onclick="this.classList.toggle('revealed')">
+            <span class="spoiler-hidden">Tap to reveal</span>
+            <span class="spoiler-text">{{ card.answer }}</span>
         </div>
+    </div>
         <form method="POST" style="display:inline" onsubmit="return confirm('Delete this deck and all its cards?')">
             <input type="hidden" name="action" value="delete_card">
             <input type="hidden" name="card_id" value="{{ card.id }}">

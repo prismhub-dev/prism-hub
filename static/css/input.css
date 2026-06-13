@@ -799,9 +799,11 @@
     }
     .timetable-day {
         background: #242424;
-        border: 1px solid #333;
-        border-radius: 0.5rem;
+        border: 1px solid #333333;
+        border-radius: var(--border-radius-lg, 0.5rem);
         overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
     .timetable-day-header {
         font-size: 0.75rem;
@@ -812,40 +814,107 @@
         padding: 0.75rem 1rem;
         border-bottom: 1px solid #333;
         background: #1e1e1e;
+        flex-shrink: 0;
     }
     .timetable-period {
-        padding: 0.75rem 1rem;
+        padding: 0.75rem 1rem 0.875rem;
         border-bottom: 1px solid #2a2a2a;
-        transition: background 0.15s;
+        flex: 1;
+        position: relative;
+        transition: background 0.15s, border-color 0.2s;
+        border-left: 3px solid transparent;
     }
     .timetable-period:last-child { border-bottom: none; }
     .timetable-period:hover { background: #2a2a2a; }
+    .timetable-period-empty {
+        background: #1e1e1e;
+        border-left-color: transparent !important;
+    }
     .period-time {
         font-size: 0.65rem;
         color: #6b7280;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.3rem;
     }
     .period-subject {
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 500;
         color: #f3f4f6;
         line-height: 1.3;
+        margin-bottom: 0.25rem;
     }
     .period-meta {
         font-size: 0.7rem;
         color: #6b7280;
-        margin-top: 0.25rem;
     }
     .period-tag {
         font-size: 0.65rem;
         color: #4b5563;
         margin-top: 0.2rem;
+    }.tt-top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #1e1e1e;
+        border: 1px solid #333;
+        border-radius: 0.5rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+        gap: 2rem;
+    }
+    .tt-clock-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }
+    .tt-clock {
+        font-size: 1.75rem;
+        font-weight: 300;
+        color: #f3f4f6;
+        letter-spacing: 0.05em;
+        font-variant-numeric: tabular-nums;
+    }
+    .tt-date {
+        font-size: 0.8rem;
+        color: #6b7280;
+    }
+    .tt-status {
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-top: 0.25rem;
+    }
+    .tt-header-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.75rem;
+    }
+    .period-healthbar {
+        margin-top: 0.5rem;
+        height: 6px;
+        background: #2a2a2a;
+        border-radius: 99px;
+        overflow: hidden;
+        width: 100%;
+    }
+    .period-healthbar-fill {
+        height: 100%;
+        background: #C9A84C;
+        width: 0%;
+        border-radius: 99px;
+        transition: width 0.5s linear;
+    }
+    .period-active {
+        border-left: 3px solid #C9A84C !important;
     }
     .timetable-empty {
         padding: 1rem;
         font-size: 0.75rem;
         color: #4b5563;
         text-align: center;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     @media (max-width: 768px) {
         .timetable-grid { grid-template-columns: 1fr; }
@@ -1035,4 +1104,44 @@
         transition: opacity 0.2s;
     }
     .btn-danger:hover { opacity: 0.85; }
+    .period-healthbar-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    .period-healthbar-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: #6b7280;
+        white-space: nowrap;
+        min-width: 18px;
+    }
+    .period-healthbar {
+        flex: 1;
+        height: 6px;
+        background: #2a2a2a;
+        border-radius: 99px;
+        overflow: hidden;
+    }
+    .card-answer-spoiler {
+        font-size: 0.875rem;
+        cursor: pointer;
+        user-select: none;
+        border-radius: 0.25rem;
+        padding: 2px 6px;
+        background: #2a2a2a;
+        transition: background 0.2s;
+    }
+    .card-answer-spoiler .spoiler-text {
+        display: none;
+        color: #9ca3af;
+    }
+    .card-answer-spoiler .spoiler-hidden {
+        color: #4b5563;
+        font-size: 0.75rem;
+    }
+    .card-answer-spoiler.revealed .spoiler-text { display: block; }
+    .card-answer-spoiler.revealed .spoiler-hidden { display: none; }
+    .card-answer-spoiler.revealed { background: #333; }
 }

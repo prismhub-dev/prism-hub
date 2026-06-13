@@ -8,22 +8,29 @@
         <p style="font-size:0.8rem;color:#6b7280;margin-bottom:1.5rem" id="confirm-sub"></p>
         <div style="display:flex;gap:0.75rem;justify-content:center">
             <button class="btn-outline" onclick="closeConfirm()">Cancel</button>
-            <button class="btn-primary" style="width:auto;padding:0.625rem 1.5rem" id="confirm-ok" onclick="submitConfirmed()">Confirm</button>
+            <button class="btn-primary" style="width:auto;padding:0.625rem 1.5rem" onclick="submitConfirmed()">Confirm</button>
         </div>
     </div>
 </div>
 
-<div class="page-header">
-    <div>
-        <h1 class="page-title">Timetable</h1>
-        {% if active_term %}
-        <p class="deck-subject-label">{{ active_term.name }} · {{ active_term.start_date.strftime('%d %b') }} – {{ active_term.end_date.strftime('%d %b %Y') }}</p>
-        {% endif %}
+<div class="tt-top-bar">
+    <div class="tt-clock-section">
+        <div id="tt-clock" class="tt-clock">--:--:--</div>
+        <div id="tt-date" class="tt-date">Loading...</div>
+        <div id="tt-status" class="tt-status"></div>
     </div>
-    <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
-        <button class="btn-outline" onclick="document.getElementById('term-modal').style.display='flex'">+ Add term</button>
-        <button class="btn-outline" onclick="document.getElementById('import-modal').style.display='flex'">↑ Import ICS</button>
-        <button class="btn-outline" onclick="document.getElementById('event-modal').style.display='flex'">+ Custom event</button>
+    <div class="tt-header-right">
+        <div>
+            <h1 class="page-title">Timetable</h1>
+            {% if active_term %}
+            <p class="deck-subject-label">{{ active_term.name }} · {{ active_term.start_date.strftime('%d %b') }} – {{ active_term.end_date.strftime('%d %b %Y') }}</p>
+            {% endif %}
+        </div>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center">
+            <button class="btn-outline" onclick="document.getElementById('term-modal').style.display='flex'">+ Add term</button>
+            <button class="btn-outline" onclick="document.getElementById('import-modal').style.display='flex'">↑ Import ICS</button>
+            <button class="btn-outline" onclick="document.getElementById('event-modal').style.display='flex'">+ Custom event</button>
+        </div>
     </div>
 </div>
 
@@ -105,7 +112,7 @@
                 </div>
                 <input type="file" id="ics-input" name="ics_file" accept=".ics" required style="display:none" onchange="updateFileLabel(this)">
             </div>
-            <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1rem">This replaces any existing imported classes for the selected term.</p>
+            <p style="font-size:0.75rem;color:#6b7280;margin-bottom:1rem">This replaces existing imported classes for the selected term.</p>
             <button type="submit" class="btn-primary">Import timetable</button>
         </form>
     </div>
@@ -151,37 +158,47 @@
 </div>
 
 {% if timetable_grid %}
-<div class="tt-grid">
+<div class="timetable-grid">
     {% for day in days %}
-    <div class="tt-day-col">
-        <div class="tt-day-header">{{ day }}</div>
+    <div class="timetable-day">
+        <div class="timetable-day-header">{{ day }}</div>
+        {% set day_has_events = [] %}
         {% for period in periods %}
-            {% set event = timetable_grid[period][day] %}
-            {% if event %}
-            <div class="tt-cell tt-cell-filled" 
-                 data-start="{{ event.start_time.strftime('%H:%M') }}"
-                 data-end="{{ event.end_time.strftime('%H:%M') }}">
-                <div class="tt-cell-main">
-                    <div class="tt-subject">{{ event.subject }}</div>
-                    <div class="tt-meta">{{ event.room }}</div>
-                </div>
-                <div class="tt-hover-detail">
-                    <div class="tt-hover-period">{{ event.period }}</div>
-                    <div class="tt-hover-time">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</div>
-                    {% if event.teacher %}
-                    <div class="tt-hover-teacher">{{ event.teacher }}</div>
-                    {% endif %}
-                </div>
-                <div class="tt-progress-bar">
-                    <div class="tt-progress-fill" data-start="{{ event.start_time.strftime('%H:%M') }}" data-end="{{ event.end_time.strftime('%H:%M') }}"></div>
-                </div>
-            </div>
-            {% else %}
-            <div class="tt-cell tt-cell-empty">
-                <div class="tt-empty-period">{{ period }}</div>
-            </div>
+            {% if timetable_grid[period][day] %}
+                {% set _ = day_has_events.append(1) %}
             {% endif %}
         {% endfor %}
+        {% if day_has_events %}
+            {% for period in periods %}
+                {% set event = timetable_grid[period][day] %}
+                {% if event %}
+                <div class="timetable-period"
+                     data-start="{{ event.start_time.strftime('%H:%M') }}"
+                     data-end="{{ event.end_time.strftime('%H:%M') }}">
+                    <div class="period-time">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</div>
+                    <div class="period-subject">{{ event.subject }}</div>
+                    {% if event.room %}
+                    <div class="period-meta">{{ event.room }}{% if event.teacher %} · {{ event.teacher }}{% endif %}</div>
+                    {% endif %}
+                    {% if event.period %}
+                    <div class="period-tag">{{ event.period }}</div>
+                    {% endif %}
+                    <div class="period-healthbar-row">
+                        <span class="period-healthbar-label">{{ event.period | replace('Period ', 'P') }}</span>
+                        <div class="period-healthbar">
+                            <div class="period-healthbar-fill"></div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="timetable-period timetable-period-empty">
+                    <div class="period-tag" style="color:#2a2a2a">{{ period }}</div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <div class="timetable-empty">No classes</div>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
@@ -222,22 +239,110 @@ function updateFileLabel(input) {
 }
 
 let pendingForm = null;
-
 function confirmDelete(formEl, message, sub) {
     pendingForm = formEl;
     document.getElementById('confirm-message').textContent = message || 'Are you sure?';
     document.getElementById('confirm-sub').textContent = sub || '';
     document.getElementById('confirm-modal').style.display = 'flex';
 }
-
 function closeConfirm() {
     document.getElementById('confirm-modal').style.display = 'none';
     pendingForm = null;
 }
-
 function submitConfirmed() {
     if (pendingForm) pendingForm.submit();
     closeConfirm();
 }
+
+function updateProgressBars() {
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const currentSecs = now.getSeconds();
+    const currentDay = now.getDay();
+    const dayMap = {1:'MONDAY', 2:'TUESDAY', 3:'WEDNESDAY', 4:'THURSDAY', 5:'FRIDAY'};
+    const todayName = dayMap[currentDay] || '';
+
+    document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
+        const col = cell.closest('.timetable-day');
+        const header = col ? col.querySelector('.timetable-day-header') : null;
+        const colDay = header ? header.textContent.trim().toUpperCase() : '';
+        const fill = cell.querySelector('.period-healthbar-fill');
+        if (!fill) return;
+
+        const [sh, sm] = cell.dataset.start.split(':').map(Number);
+        const [eh, em] = cell.dataset.end.split(':').map(Number);
+        const startSecs = (sh * 60 + sm) * 60;
+        const endSecs = (eh * 60 + em) * 60;
+        const nowSecs = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+        if (colDay === todayName && nowSecs >= startSecs && nowSecs <= endSecs) {
+            const pct = ((nowSecs - startSecs) / (endSecs - startSecs)) * 100;
+            fill.style.width = pct.toFixed(2) + '%';
+            cell.classList.add('period-active');
+        } else if (colDay === todayName && nowSecs > endSecs) {
+            fill.style.width = '100%';
+            fill.style.background = '#3a3a3a';
+            cell.classList.remove('period-active');
+        } else {
+            fill.style.width = '0%';
+            cell.classList.remove('period-active');
+        }
+    });
+
+    updateClock();
+}
+
+function updateClock() {
+    const now = new Date();
+    const clockEl = document.getElementById('tt-clock');
+    const dateEl = document.getElementById('tt-date');
+    if (!clockEl || !dateEl) return;
+    
+    clockEl.textContent = now.toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    dateEl.textContent = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const dayMap = {1:'MONDAY', 2:'TUESDAY', 3:'WEDNESDAY', 4:'THURSDAY', 5:'FRIDAY'};
+    const todayName = dayMap[now.getDay()] || '';
+    
+    let currentPeriod = null;
+    let nextPeriod = null;
+    
+    document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
+        const col = cell.closest('.timetable-day');
+        const header = col ? col.querySelector('.timetable-day-header') : null;
+        const colDay = header ? header.textContent.trim().toUpperCase() : '';
+        if (colDay !== todayName) return;
+        
+        const [sh, sm] = cell.dataset.start.split(':').map(Number);
+        const [eh, em] = cell.dataset.end.split(':').map(Number);
+        const startMins = sh * 60 + sm;
+        const endMins = eh * 60 + em;
+        
+        if (currentMins >= startMins && currentMins < endMins) {
+            currentPeriod = cell.querySelector('.period-subject')?.textContent || '';
+        }
+        if (currentMins < startMins && !nextPeriod) {
+            nextPeriod = cell.querySelector('.period-subject')?.textContent || '';
+        }
+    });
+
+    const statusEl = document.getElementById('tt-status');
+    if (statusEl) {
+        if (currentPeriod) {
+            statusEl.textContent = `Now: ${currentPeriod}`;
+            statusEl.style.color = '#C9A84C';
+        } else if (nextPeriod) {
+            statusEl.textContent = `Next: ${nextPeriod}`;
+            statusEl.style.color = '#6b7280';
+        } else {
+            statusEl.textContent = todayName ? 'No more classes today' : 'No school today';
+            statusEl.style.color = '#4b5563';
+        }
+    }
+}
+
+updateProgressBars();
+setInterval(updateProgressBars, 1000);
 </script>
 {% endblock %}
