@@ -28,7 +28,7 @@
     });
 })();
 
-// Global confirm dialog — intercepts form submits with data-confirm
+// Global confirm dialog -intercepts form submits with data-confirm
 (function() {
     let pendingForm = null;
 

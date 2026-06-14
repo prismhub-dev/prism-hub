@@ -114,7 +114,7 @@ def get_study_recommendations(user_marks, user_assignments, user_decks, user_str
         subj = deck.subject.lower()
         deck_subjects[subj] = deck_subjects.get(subj, 0) + 1
     
-    # Cards studied recently — approximate from deck count
+    # Cards studied recently -approximate from deck count
     cards_per_subject = {}
     for deck in user_decks:
         subj = deck.subject.lower()
@@ -203,24 +203,24 @@ def _generate_tip(priority, avg, days_until_due, deck_count, streak):
     """Generate a human-readable study tip."""
     tips = {
         'critical': [
-            f"Your average is {avg:.0f}% — focus here immediately. Block out dedicated study time today.",
+            f"Your average is {avg:.0f}% -focus here immediately. Block out dedicated study time today.",
             f"Only {days_until_due} day{'s' if days_until_due != 1 else ''} until your assessment. Prioritise this above everything else.",
             "Create a flashcard deck for this subject right now and drill the key concepts.",
         ],
         'high': [
-            f"Average of {avg:.0f}% — room to improve. Aim for consistent daily revision.",
+            f"Average of {avg:.0f}% -room to improve. Aim for consistent daily revision.",
             f"{'Start' if deck_count == 0 else 'Review'} your flashcard decks for this subject.",
             "Break the content into smaller topics and tackle one per study session.",
         ],
         'medium': [
-            f"You're tracking at {avg:.0f}% — keep the momentum going with regular review.",
+            f"You're tracking at {avg:.0f}% -keep the momentum going with regular review.",
             "Revisit past feedback and identify patterns in your mistakes.",
             "A 20-minute review session today will pay dividends later.",
         ],
         'low': [
-            f"Solid {avg:.0f}% average — maintain it with light touch revision.",
+            f"Solid {avg:.0f}% average -maintain it with light touch revision.",
             "You're on track. Keep your streak going and stay consistent.",
-            "Consider helping a classmate — teaching reinforces your own understanding.",
+            "Consider helping a classmate -teaching reinforces your own understanding.",
         ]
     }
     

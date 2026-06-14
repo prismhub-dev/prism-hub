@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% block title %}Quiz — {{ deck.name }}{% endblock %}
 {% block content %}
 
 <div class="page-header">
@@ -183,7 +182,7 @@ document.getElementById('flashcard').addEventListener('touchend', (e) => {
     const dy = touchEndY - touchStartY;
 
     if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-        // Horizontal swipe — only act if card is flipped
+        // Horizontal swipe -only act if card is flipped
         if (flipped) {
             if (dx > 0) nextCard(true);   // swipe right = correct
             else nextCard(false);          // swipe left = wrong
