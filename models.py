@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     flashcard_decks = db.relationship('FlashcardDeck', backref='user', lazy=True)
     streak = db.Column(db.Integer, default=0)
     last_studied = db.Column(db.DateTime, nullable=True)
+    settings = db.relationship('UserSettings', backref='user', uselist=False, lazy=True)
 
 class Assignment(db.Model):
     __tablename__ = 'assignments'
@@ -130,6 +131,7 @@ class UserSettings(db.Model):
     notifications_enabled = db.Column(db.Boolean, default=False)
     grading_scale = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    font_family = db.Column(db.String(50), default='Inter')
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class AssignmentTask(db.Model):

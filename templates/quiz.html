@@ -31,7 +31,7 @@
     </div>
 
     <p style="text-align:center;font-size:0.75rem;color:#4b5563;margin-bottom:1rem">
-        Space / ↑↓ to flip &nbsp;·&nbsp; ← wrong &nbsp;·&nbsp; → correct
+        Space / ↑↓ or swipe up to flip &nbsp;·&nbsp; ← swipe left wrong &nbsp;·&nbsp; → swipe right correct
     </p>
 
     <div class="quiz-controls" id="quiz-controls" style="display:none">
@@ -49,6 +49,7 @@
                 <button class="btn-outline" onclick="restartQuiz()">Study again</button>
                 <a href="{{ url_for('flashcard_deck', deck_id=deck.id) }}" class="btn-gold" style="display:inline-block">Back to deck</a>
             </div>
+            <canvas id="particle-canvas" style="position:fixed;inset:0;pointer-events:none;z-index:100"></canvas>
         </div>
     </div>
 </div>
@@ -88,6 +89,48 @@ function nextCard(wasCorrect) {
     loadCard();
 }
 
+function fireParticles() {
+    const canvas = document.getElementById('particle-canvas');
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const colors = ['#C9A84C', '#f3f4f6', '#86efac', '#fca5a5'];
+    const particles = [];
+
+    for (let i = 0; i < 80; i++) {
+        particles.push({
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12 - 4,
+            size: Math.random() * 6 + 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 1
+        });
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let alive = false;
+        particles.forEach(p => {
+            if (p.life <= 0) return;
+            alive = true;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.3; // gravity
+            p.life -= 0.015;
+            ctx.globalAlpha = Math.max(p.life, 0);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        ctx.globalAlpha = 1;
+        if (alive) requestAnimationFrame(animate);
+        else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    animate();
+}
+
 function showResults() {
     document.getElementById('flashcard').style.display = 'none';
     document.getElementById('quiz-controls').style.display = 'none';
@@ -97,6 +140,9 @@ function showResults() {
     const pct = Math.round((correct / total) * 100);
     document.getElementById('results-score').textContent = `${correct} / ${total} correct (${pct}%)`;
     document.getElementById('results-emoji').textContent = pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📖';
+
+    if (pct >= 50) fireParticles();
+
     fetch('/flashcards/{{ deck.id }}/complete', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -105,7 +151,8 @@ function showResults() {
     .then(r => r.json())
     .then(data => {
         if (data.streak > 0) {
-            document.getElementById('results-streak').textContent = `🔥 ${data.streak} day streak`;
+            const streakEl = document.getElementById('results-streak');
+            streakEl.innerHTML = `<span class="flame-animate">🔥</span> ${data.streak} day streak`;
         }
     });
 }
@@ -120,6 +167,32 @@ function restartQuiz() {
 }
 
 loadCard();
+
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.getElementById('flashcard').addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+
+document.getElementById('flashcard').addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const touchEndY = e.changedTouches[0].screenY;
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+        // Horizontal swipe — only act if card is flipped
+        if (flipped) {
+            if (dx > 0) nextCard(true);   // swipe right = correct
+            else nextCard(false);          // swipe left = wrong
+        }
+    } else if (Math.abs(dy) > 50) {
+        // Vertical swipe = flip
+        if (!flipped) flipCard();
+    }
+}, { passive: true });
 
 document.addEventListener('keydown', function(e) {
     if (document.getElementById('quiz-results').style.display !== 'none') return;

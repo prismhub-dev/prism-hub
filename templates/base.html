@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Prism Hub{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
-<body>
-
+<body style="font-family: '{{ current_user.font_family if current_user.is_authenticated and current_user.settings and current_user.settings.font_family else 'Inter' }}', sans-serif">
     <nav>
-        <div class="nav-brand">
+        <div class="nav-brand" style="display:flex;align-items:center;gap:0.5rem">
+            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="22" height="22">
             <span class="gold">Prism Hub</span>
         </div>
         <div class="nav-links">
+            <button id="theme-toggle" class="btn-outline" style="padding:0.3rem 0.6rem;font-size:0.875rem" title="Toggle theme">🌙</button>
+
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('dashboard') }}">Dashboard</a>
                 <a href="{{ url_for('assignments') }}">Assignments</a>
@@ -41,6 +44,17 @@
         {% endwith %}
         {% block content %}{% endblock %}
     </main>
+
+    <div id="global-confirm-modal" class="modal-overlay" style="display:none">
+        <div class="modal" style="max-width:360px;text-align:center">
+            <p class="modal-title" style="margin-bottom:0.5rem" id="global-confirm-message">Are you sure?</p>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1.5rem" id="global-confirm-sub"></p>
+            <div style="display:flex;gap:0.75rem;justify-content:center">
+                <button class="btn-outline" type="button" onclick="window.__closeGlobalConfirm()">Cancel</button>
+                <button class="btn-primary" style="width:auto;padding:0.625rem 1.5rem" type="button" onclick="window.__confirmGlobalConfirm()">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}

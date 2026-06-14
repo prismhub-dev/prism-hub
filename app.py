@@ -716,6 +716,7 @@ def settings():
             settings.num_terms = int(request.form.get('num_terms', 4))
             settings.year_level = request.form.get('year_level', '').strip()
             settings.timezone = request.form.get('timezone', 'Australia/Sydney')
+            settings.font_family = request.form.get('font_family', 'Inter').strip()
             settings.updated_at = datetime.utcnow()
             db.session.commit()
             flash('Settings saved.', 'success')

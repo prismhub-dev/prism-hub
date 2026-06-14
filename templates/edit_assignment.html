@@ -73,7 +73,7 @@
                         </button>
                         <span style="font-size:0.875rem;{% if task.completed %}text-decoration:line-through;opacity:0.5{% endif %}">{{ task.title }}</span>
                     </form>
-                    <form method="POST" style="display:inline" onsubmit="return confirm('Delete task?')">
+                    <form method="POST" style="display:inline" data-confirm="Delete this task?">
                         <input type="hidden" name="action" value="delete_task">
                         <input type="hidden" name="task_id" value="{{ task.id }}">
                         <button type="submit" class="delete-btn">✕</button>

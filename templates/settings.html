@@ -42,6 +42,15 @@
                         <option value="UTC" {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>Font</label>
+                    <select name="font_family" class="form-select">
+                        <option value="Inter" {% if settings.font_family == 'Inter' or not settings.font_family %}selected{% endif %}>Inter (default)</option>
+                        <option value="Poppins" {% if settings.font_family == 'Poppins' %}selected{% endif %}>Poppins</option>
+                        <option value="Space Grotesk" {% if settings.font_family == 'Space Grotesk' %}selected{% endif %}>Space Grotesk</option>
+                        <option value="Merriweather" {% if settings.font_family == 'Merriweather' %}selected{% endif %}>Merriweather (serif)</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn-primary" style="width:auto;padding:0.625rem 1.5rem">Save changes</button>
             </form>
         </div>
@@ -93,7 +102,7 @@
                         <p style="font-size:0.875rem;font-weight:500">{{ subject.name }}</p>
                         <p style="font-size:0.75rem;color:#6b7280">{{ subject.class_code }}{% if subject.teacher %} · {{ subject.teacher }}{% endif %}</p>
                     </div>
-                    <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" onsubmit="return confirm('Remove {{ subject.name }} from your markbook?')">
+                    <form method="POST" action="{{ url_for('delete_subject', subject_id=subject.id) }}" data-confirm="Remove {{ subject.name }} from your markbook?">
                         <button type="submit" class="delete-btn">✕</button>
                     </form>
                 </div>
@@ -136,7 +145,7 @@
         <h2 class="settings-section-title" style="color:#fca5a5">Danger zone</h2>
         <div class="card" style="border-color:#991b1b">
             <p style="font-size:0.875rem;color:#9ca3af;margin-bottom:1rem">Deleting your account is permanent. All data will be lost.</p>
-            <form method="POST" onsubmit="return confirm('This will permanently delete your account. Type your username to confirm.')">
+            <form method="POST" data-confirm="This will permanently delete your account." data-confirm-sub="Type your username to confirm.">
                 <input type="hidden" name="action" value="delete_account">
                 <div class="form-group">
                     <label>Type your username to confirm: <span style="color:#f3f4f6">{{ current_user.username }}</span></label>

@@ -172,7 +172,7 @@
                     <span class="mark-score">{{ m.mark }}/{{ m.max_mark }}</span>
                     <span class="mark-pct">{{ (m.mark / m.max_mark * 100) | round(1) }}%</span>
                     <button class="edit-btn" onclick="openEditMark({{ m.id }}, '{{ m.subject }}', '{{ m.assessment_name }}', {{ m.mark }}, {{ m.max_mark }}, {{ m.weight }}, '{{ m.date.strftime('%Y-%m-%d') }}', {{ m.mean or 'null' }}, {{ m.median or 'null' }}, `{{ m.feedback or '' }}`)">✎</button>
-                    <form method="POST" action="{{ url_for('marks') }}" style="display:inline" onsubmit="return confirm('Delete this mark?')">
+                    <form method="POST" action="{{ url_for('marks') }}" style="display:inline" data-confirm="Delete this mark?">
                         <input type="hidden" name="action" value="delete">
                         <input type="hidden" name="mark_id" value="{{ m.id }}">
                         <button type="submit" class="delete-btn">✕</button>
