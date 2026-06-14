@@ -16,6 +16,16 @@
             <button type="submit" class="btn-primary">Log in</button>
         </form>
         <p class="auth-link">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+
+        <details style="margin-top:1.25rem;font-size:0.8rem;color:var(--text-muted)">
+            <summary style="cursor:pointer">Didn't get a verification email?</summary>
+            <form method="POST" action="{{ url_for('resend_verification') }}" style="margin-top:0.75rem">
+                <div class="form-group" style="margin-bottom:0.75rem">
+                    <input type="email" name="email" placeholder="you@example.com" required>
+                </div>
+                <button type="submit" class="btn-outline" style="width:100%">Resend verification email</button>
+            </form>
+        </details>
     </div>
 </div>
 {% endblock %}
