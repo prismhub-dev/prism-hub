@@ -18,6 +18,21 @@
     </div>
 </div>
 
+{% if next_period %}
+<div class="card" style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center">
+    <div>
+        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Next period</p>
+        <p style="font-size:1.1rem;font-weight:600">{{ next_period.subject }}</p>
+    </div>
+    <div style="text-align:right">
+        <p class="stat-value gold" style="font-size:1.5rem" id="next-period-countdown" data-minutes="{{ next_period.minutes_until }}">
+            {{ next_period.minutes_until }} min
+        </p>
+        <p style="font-size:0.7rem;color:var(--text-muted)">until class</p>
+    </div>
+</div>
+{% endif %}
+
 <div class="stats-grid">
     <div class="stat-card">
         <p class="stat-label">Weighted Average</p>
@@ -110,6 +125,53 @@
     </div>
 </div>
 {% endif %}
+
+<div class="card" style="margin-top:1.5rem">
+    <div class="card-header">
+        <h2 class="card-title">Shortcuts</h2>
+        <button type="button" class="card-link" style="background:none;border:none;cursor:pointer" onclick="document.getElementById('add-shortcut-modal').style.display='flex'">+ Add</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
+        {% for s in shortcuts %}
+        <a href="{{ s.url }}" target="_blank" style="text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:0.375rem;width:72px;position:relative" class="shortcut-item">
+            <div style="width:48px;height:48px;border-radius:50%;background:var(--bg-input);border:1px solid var(--border-col);display:flex;align-items:center;justify-content:center;font-size:1.25rem">
+                {{ s.icon }}
+            </div>
+            <span style="font-size:0.7rem;color:var(--text-sub);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%">{{ s.name }}</span>
+            <form method="POST" action="{{ url_for('delete_shortcut', shortcut_id=s.id) }}" data-confirm="Remove this shortcut?" style="position:absolute;top:-4px;right:0">
+                <button type="submit" style="background:var(--bg-card);border:1px solid var(--border-col);border-radius:50%;width:18px;height:18px;font-size:0.6rem;line-height:1;cursor:pointer;color:var(--text-muted)">×</button>
+            </form>
+        </a>
+        {% endfor %}
+        {% if not shortcuts %}
+        <p style="font-size:0.8rem;color:var(--text-muted)">No shortcuts yet - add links to Sentral, Google Classroom, etc.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div id="add-shortcut-modal" class="modal-overlay" style="display:none">
+    <div class="modal" style="max-width:360px">
+        <h3 class="modal-title" style="margin-bottom:1rem">Add shortcut</h3>
+        <form method="POST" action="{{ url_for('add_shortcut') }}">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required placeholder="e.g. Sentral">
+            </div>
+            <div class="form-group">
+                <label>URL</label>
+                <input type="text" name="url" required placeholder="e.g. portal.sentral.com.au">
+            </div>
+            <div class="form-group">
+                <label>Icon (emoji)</label>
+                <input type="text" name="icon" placeholder="🔗" maxlength="4">
+            </div>
+            <div style="display:flex;gap:0.75rem;justify-content:flex-end">
+                <button type="button" class="btn-outline" onclick="document.getElementById('add-shortcut-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-gold" style="padding:0.5rem 1.25rem">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 {% endblock %}
 

@@ -141,3 +141,11 @@ class AssignmentTask(db.Model):
     title = db.Column(db.String(200), nullable=False)
     completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Shortcut(db.Model):
+    __tablename__ = 'shortcuts'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    icon = db.Column(db.String(10), default='🔗')

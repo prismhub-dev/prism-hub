@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="max-width:480px;margin:2rem auto;text-align:center">
+    <h1 style="font-size:1.75rem;font-weight:600;margin-bottom:0.5rem">Get in Touch</h1>
+    <p style="font-size:0.875rem;color:var(--text-muted);margin-bottom:2rem">
+        Questions, feedback, or bug reports - I'd love to hear from you.
+    </p>
+
+    <div class="card" style="text-align:left">
+        <div style="display:flex;flex-direction:column;gap:1.25rem">
+            <div>
+                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Email</p>
+                <a href="mailto:prismhub.dev@gmail.com" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">youremail@example.com</a>
+            </div>
+            <div>
+                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Instagram - prismhub.dev</p>
+                <a href="https://www.instagram.com/prismhub.dev/" target="_blank" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">prismhub-dev/prism-hub</a>
+            </div>
+            <div>
+                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">GitHub</p>
+                <a href="https://github.com/prismhub-dev" target="_blank" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">prismhub-dev/prism-hub</a>
+            </div>
+            <div>
+                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">About</p>
+                <p style="font-size:0.875rem;color:var(--text-sub);line-height:1.5">
+                    Prism Hub is an enterprise project for HSC Enterprise Computing, built to help students manage assignments, marks, flashcards and timetables in one place.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

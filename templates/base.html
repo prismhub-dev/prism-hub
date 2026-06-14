@@ -10,28 +10,56 @@
 </head>
 <body style="font-family: '{{ current_user.font_family if current_user.is_authenticated and current_user.settings and current_user.settings.font_family else 'Inter' }}', sans-serif">
     <nav>
-        <div class="nav-brand" style="display:flex;align-items:center;gap:0.5rem">
-            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="22" height="22">
-            <span class="gold">Prism Hub</span>
-        </div>
-        <div class="nav-links">
+        <div style="display:flex;align-items:center;gap:1rem">
             <button id="theme-toggle" class="btn-outline" style="padding:0.3rem 0.6rem;font-size:0.875rem" title="Toggle theme">🌙</button>
-
-            {% if current_user.is_authenticated %}
-                <a href="{{ url_for('dashboard') }}">Dashboard</a>
-                <a href="{{ url_for('assignments') }}">Assignments</a>
-                <a href="{{ url_for('marks') }}">Marks</a>
-                <a href="{{ url_for('analytics') }}">Analytics</a>
-                <a href="{{ url_for('study') }}">Study</a>
-                <a href="{{ url_for('flashcards') }}">Flashcards</a>
-                <a href="{{ url_for('timetable') }}">Timetable</a>
-                <a href="{{ url_for('settings') }}">Settings</a>
-                <a href="{{ url_for('logout') }}">Logout</a>
-            {% else %}
-                <a href="{{ url_for('login') }}">Login</a>
-                <a href="{{ url_for('register') }}" class="btn-gold">Register</a>
-            {% endif %}
+            <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}" class="nav-brand" style="display:flex;align-items:center;gap:0.5rem;text-decoration:none">
+                <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="22" height="22">
+                <span class="gold">Prism Hub</span>
+            </a>
         </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="nav-links">
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">Academics</button>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('assignments') }}">Assignments</a>
+                    <a href="{{ url_for('marks') }}">Marks</a>
+                    <a href="{{ url_for('analytics') }}">Analytics</a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">Study</button>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('flashcards') }}">Flashcards</a>
+                    <a href="{{ url_for('study') }}">Study Planner</a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">Schedule</button>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('timetable') }}">Timetable</a>
+                </div>
+            </div>
+
+            <div class="nav-dropdown">
+                <button class="nav-dropdown-trigger">Settings</button>
+                <div class="nav-dropdown-menu">
+                    <a href="{{ url_for('settings') }}">Settings</a>
+                    <a href="{{ url_for('contact') }}">Contact us</a>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="nav-links">
+            <a href="{{ url_for('contact') }}">Contact</a>
+            <a href="{{ url_for('login') }}">Log in</a>
+            <a href="{{ url_for('register') }}" class="btn-gold">Sign up</a>
+        </div>
+        {% endif %}
     </nav>
 
     <main>

@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
-from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask
+from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask, Shortcut
 import os
 from dotenv import load_dotenv
 import bcrypt
@@ -126,6 +126,24 @@ def dashboard():
                 if key not in seen:
                     seen.add(key)
                     today_classes.append(e)
+
+    # Time until next period
+    next_period = None
+    now_time = datetime.now(timezone.utc)
+    for event in sorted(today_classes, key=lambda x: x.start_time):
+        # Compare time-of-day only
+        event_start_today = now_time.replace(
+            hour=event.start_time.hour, minute=event.start_time.minute, second=0, microsecond=0
+        )
+        if event_start_today > now_time:
+            next_period = {
+                'subject': event.subject,
+                'start': event_start_today,
+                'minutes_until': int((event_start_today - now_time).total_seconds() // 60)
+            }
+            break
+    
+    shortcuts = Shortcut.query.filter_by(user_id=current_user.id).all()
     
     return render_template('dashboard.html',
         user=current_user,
@@ -134,6 +152,8 @@ def dashboard():
         mark_count=len(marks),
         deck_count=decks,
         today_classes=today_classes,
+        next_period=next_period,
+        shortcuts=shortcuts,
         now=datetime.now(timezone.utc)
     )
 
@@ -953,6 +973,33 @@ def retention_check():
         'subject': d.subject,
         'due': d.retention_due.isoformat()
     } for d in due_decks])
+
+@app.route('/contact')
+def contact():
+    return render_template('contact.html')
+
+@app.route('/shortcuts/add', methods=['POST'])
+@login_required
+def add_shortcut():
+    name = request.form.get('name', '').strip()
+    url = request.form.get('url', '').strip()
+    icon = request.form.get('icon', '🔗').strip() or '🔗'
+    if name and url:
+        if not url.startswith('http'):
+            url = 'https://' + url
+        shortcut = Shortcut(user_id=current_user.id, name=name, url=url, icon=icon)
+        db.session.add(shortcut)
+        db.session.commit()
+    return redirect(url_for('dashboard'))
+
+
+@app.route('/shortcuts/<int:shortcut_id>/delete', methods=['POST'])
+@login_required
+def delete_shortcut(shortcut_id):
+    shortcut = Shortcut.query.filter_by(id=shortcut_id, user_id=current_user.id).first_or_404()
+    db.session.delete(shortcut)
+    db.session.commit()
+    return redirect(url_for('dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
