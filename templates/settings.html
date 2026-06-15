@@ -22,6 +22,10 @@
                         <input type="text" name="year_level" value="{{ settings.year_level or '' }}" placeholder="e.g. Year 10">
                     </div>
                     <div class="form-group">
+                        <label>Display name</label>
+                        <input type="text" name="display_name" value="{{ current_user.display_name or '' }}" placeholder="e.g. Arham">
+                    </div>
+                    <div class="form-group">
                         <label>Number of terms</label>
                         <select name="num_terms" class="form-select">
                             {% for n in range(1, 7) %}

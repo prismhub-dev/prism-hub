@@ -732,6 +732,7 @@ def settings():
         action = request.form.get('action')
 
         if action == 'save_general':
+            current_user.display_name = request.form.get('display_name', '').strip() or None
             settings.school_name = request.form.get('school_name', '').strip()
             settings.num_terms = int(request.form.get('num_terms', 4))
             settings.year_level = request.form.get('year_level', '').strip()
