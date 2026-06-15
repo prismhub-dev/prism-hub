@@ -7,7 +7,7 @@ import bcrypt
 from datetime import datetime, timezone
 import csv, io
 from study_engine import get_study_recommendations
-from flask_mail import Mail, Message
+import resend
 from itsdangerous import URLSafeTimedSerializer
 
 load_dotenv()
@@ -17,14 +17,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-app.config['MAIL_SERVER'] = 'smtp-relay.brevo.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = 'prismhub.dev@gmail.com'
-
-mail = Mail(app)
+resend.api_key = os.getenv('RESEND_API_KEY')
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 db.init_app(app)
@@ -40,11 +33,12 @@ def load_user(user_id):
 def send_verification_email(user):
     token = serializer.dumps(user.email, salt='email-verify')
     verify_url = url_for('verify_email', token=token, _external=True)
-    
-    msg = Message(
-        subject='Verify your Prism Hub account',
-        recipients=[user.email],
-        html=f'''
+
+    resend.Emails.send({
+        "from": "Prism Hub <onboarding@resend.dev>",
+        "to": [user.email],
+        "subject": "Verify your Prism Hub account",
+        "html": f'''
         <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
             <h2 style="color: #C9A84C;">Welcome to Prism Hub</h2>
             <p>Hi {user.username},</p>
@@ -55,8 +49,7 @@ def send_verification_email(user):
             <p style="font-size: 0.8rem; color: #888;">If you didn't sign up for Prism Hub, you can ignore this email. This link expires in 24 hours.</p>
         </div>
         '''
-    )
-    mail.send(msg)
+    })
 
 # ─── Public routes ───────────────────────────────────────────────
 @app.route('/')
