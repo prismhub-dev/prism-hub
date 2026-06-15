@@ -7,8 +7,6 @@ import bcrypt
 from datetime import datetime, timezone
 import csv, io
 from study_engine import get_study_recommendations
-import resend
-from itsdangerous import URLSafeTimedSerializer
 
 load_dotenv()
 
@@ -16,9 +14,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-resend.api_key = os.getenv('RESEND_API_KEY')
-serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 db.init_app(app)
 
@@ -29,27 +24,6 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-def send_verification_email(user):
-    token = serializer.dumps(user.email, salt='email-verify')
-    verify_url = url_for('verify_email', token=token, _external=True)
-
-    resend.Emails.send({
-        "from": "Prism Hub <onboarding@resend.dev>",
-        "to": [user.email],
-        "subject": "Verify your Prism Hub account",
-        "html": f'''
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
-            <h2 style="color: #C9A84C;">Welcome to Prism Hub</h2>
-            <p>Hi {user.username},</p>
-            <p>Thanks for signing up. Please verify your email address to activate your account:</p>
-            <p style="margin: 1.5rem 0;">
-                <a href="{verify_url}" style="background-color: #C9A84C; color: #1a1a1a; padding: 0.75rem 1.5rem; border-radius: 6px; text-decoration: none; font-weight: 600;">Verify Email</a>
-            </p>
-            <p style="font-size: 0.8rem; color: #888;">If you didn't sign up for Prism Hub, you can ignore this email. This link expires in 24 hours.</p>
-        </div>
-        '''
-    })
 
 # ─── Public routes ───────────────────────────────────────────────
 @app.route('/')
@@ -81,16 +55,10 @@ def register():
             return render_template('register.html')
 
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user = User(username=username, email=email, password=hashed.decode('utf-8'), email_verified=False)
+        user = User(username=username, email=email, password=hashed.decode('utf-8'))
         db.session.add(user)
         db.session.commit()
-
-        try:
-            send_verification_email(user)
-            flash('Account created! Check your email to verify your account before logging in.', 'success')
-        except Exception:
-            flash('Account created, but we could not send the verification email. Contact support.', 'error')
-
+        flash('Account created! Please log in.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -103,9 +71,6 @@ def login():
         password = request.form.get('password', '').strip()
         user = User.query.filter_by(email=email).first()
         if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-            if not user.email_verified:
-                flash('Please verify your email before logging in. Check your inbox.', 'error')
-                return render_template('login.html')
             login_user(user, remember=True)
             return redirect(url_for('dashboard'))
         flash('Invalid email or password.', 'error')
@@ -1035,42 +1000,6 @@ def delete_shortcut(shortcut_id):
     db.session.delete(shortcut)
     db.session.commit()
     return redirect(url_for('dashboard'))
-
-@app.route('/verify/<token>')
-def verify_email(token):
-    try:
-        email = serializer.loads(token, salt='email-verify', max_age=86400)  # 24 hours
-    except Exception:
-        flash('Verification link is invalid or has expired.', 'error')
-        return redirect(url_for('login'))
-
-    user = User.query.filter_by(email=email).first()
-    if not user:
-        flash('User not found.', 'error')
-        return redirect(url_for('login'))
-
-    if user.email_verified:
-        flash('Email already verified. You can log in.', 'success')
-    else:
-        user.email_verified = True
-        db.session.commit()
-        flash('Email verified! You can now log in.', 'success')
-
-    return redirect(url_for('login'))
-
-@app.route('/resend-verification', methods=['POST'])
-def resend_verification():
-    email = request.form.get('email', '').strip().lower()
-    user = User.query.filter_by(email=email).first()
-    if user and not user.email_verified:
-        try:
-            send_verification_email(user)
-            flash('Verification email resent.', 'success')
-        except Exception:
-            flash('Could not send email. Try again later.', 'error')
-    else:
-        flash('If that email exists and is unverified, a link has been sent.', 'success')
-    return redirect(url_for('login'))
 
 with app.app_context():
     db.create_all()

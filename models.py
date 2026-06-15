@@ -10,7 +10,6 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    email_verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     assignments = db.relationship('Assignment', backref='user', lazy=True)
     marks = db.relationship('Mark', backref='user', lazy=True)
