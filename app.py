@@ -159,7 +159,11 @@ def assignments():
             priority = int(request.form.get('priority', 2))
             
             if title and subject and due_date_str:
-                due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                try:
+                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                except ValueError:
+                    flash('Invalid date format. Please use the date picker.', 'error')
+                    return redirect(url_for('assignments'))
                 assignment = Assignment(
                     user_id=current_user.id,
                     title=title,
@@ -630,9 +634,12 @@ def timetable():
         wk = get_week_key(e.start_time)
         weeks[wk].append(e)
 
-    best_week_key = max(weeks.keys(), key=lambda wk: len(set(
-        (e.day_of_week, e.period) for e in weeks[wk]
-    )))
+    if not weeks:
+        best_week_key = None
+    else:
+        best_week_key = max(weeks.keys(), key=lambda wk: len(set(
+            (e.day_of_week, e.period) for e in weeks[wk]
+        )))
     representative_events = weeks[best_week_key]
 
     seen = set()
