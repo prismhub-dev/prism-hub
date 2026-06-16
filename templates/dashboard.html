@@ -3,7 +3,7 @@
 
 <div class="dashboard-header">
     <div>
-        <h1 class="dashboard-title">Welcome back, {{ user.username }}</h1>
+        <h1 class="dashboard-title">Welcome back, {{ user.display_name or user.username }}</h1>
         <p class="dashboard-sub">Here's your academic overview</p>
     </div>
 </div>
@@ -19,16 +19,16 @@
 </div>
 
 {% if next_period %}
-<div class="card" style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center">
-    <div>
-        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Next period</p>
-        <p style="font-size:1.1rem;font-weight:600">{{ next_period.subject }}</p>
-    </div>
-    <div style="text-align:right">
-        <p class="stat-value gold" style="font-size:1.5rem" id="next-period-countdown" data-minutes="{{ next_period.minutes_until }}">
-            {{ next_period.minutes_until }} min
-        </p>
-        <p style="font-size:0.7rem;color:var(--text-muted)">until class</p>
+<div id="next-period-card" class="card" style="display:none;margin-bottom:1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+            <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Next period</p>
+            <p style="font-size:1.1rem;font-weight:600" id="next-period-subject">-</p>
+        </div>
+        <div style="text-align:right">
+            <p class="stat-value gold" style="font-size:1.5rem" id="next-period-countdown">-</p>
+            <p style="font-size:0.7rem;color:var(--text-muted)">until class</p>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -114,7 +114,7 @@
         <h2 class="card-title">Today's classes</h2>
         <a href="{{ url_for('timetable') }}" class="card-link">Full timetable</a>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem">
         {% for event in today_classes %}
         <div style="background:#2a2a2a;border:1px solid #333;border-radius:0.5rem;padding:0.75rem 1rem;min-width:140px">
             <p style="font-size:0.7rem;color:#6b7280;margin-bottom:0.25rem">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</p>
@@ -196,5 +196,41 @@ fetch('/retention-check')
         });
     })
     .catch(() => {});
+
+const todayClasses = {{ today_class_times | tojson }};
+
+function updateNextPeriod() {
+    const now = new Date();
+    const currentMins = now.getHours() * 60 + now.getMinutes();
+    const currentSecs = now.getSeconds();
+
+    let next = null;
+    for (const cls of todayClasses) {
+        const [h, m] = cls.start.split(':').map(Number);
+        const startMins = h * 60 + m;
+        if (startMins > currentMins) {
+            const totalSecs = (startMins - currentMins) * 60 - currentSecs;
+            next = { subject: cls.subject, totalSecs };
+            break;
+        }
+    }
+
+    const card = document.getElementById('next-period-card');
+    if (!next || next.totalSecs <= 0) {
+        if (card) card.style.display = 'none';
+        return;
+    }
+
+    if (card) card.style.display = 'block';
+    document.getElementById('next-period-subject').textContent = next.subject;
+
+    const mins = Math.floor(next.totalSecs / 60);
+    const secs = next.totalSecs % 60;
+    document.getElementById('next-period-countdown').textContent =
+        mins > 0 ? `${mins}m ${secs.toString().padStart(2,'0')}s` : `${secs}s`;
+}
+
+updateNextPeriod();
+setInterval(updateNextPeriod, 1000);
 </script>
 {% endblock %}

@@ -126,23 +126,12 @@ def dashboard():
                 if key not in seen:
                     seen.add(key)
                     today_classes.append(e)
-
-    # Time until next period
-    next_period = None
-    now_time = datetime.now(timezone.utc)
-    for event in sorted(today_classes, key=lambda x: x.start_time):
-        # Compare time-of-day only
-        event_start_today = now_time.replace(
-            hour=event.start_time.hour, minute=event.start_time.minute, second=0, microsecond=0
-        )
-        if event_start_today > now_time:
-            next_period = {
-                'subject': event.subject,
-                'start': event_start_today,
-                'minutes_until': int((event_start_today - now_time).total_seconds() // 60)
-            }
-            break
     
+    today_class_times = [
+        {'subject': e.subject, 'start': e.start_time.strftime('%H:%M')}
+        for e in today_classes
+    ] if today_classes else []
+
     shortcuts = Shortcut.query.filter_by(user_id=current_user.id).all()
     
     return render_template('dashboard.html',
@@ -152,9 +141,9 @@ def dashboard():
         mark_count=len(marks),
         deck_count=decks,
         today_classes=today_classes,
-        next_period=next_period,
         shortcuts=shortcuts,
-        now=datetime.now(timezone.utc)
+        today_class_times=today_class_times,
+        now=datetime.utcnow()
     )
 
 @app.route('/assignments', methods=['GET', 'POST'])
@@ -213,7 +202,7 @@ def assignments():
     return render_template('assignments.html',
         pending=pending,
         completed=completed,
-        now=datetime.now(timezone.utc)
+        now=datetime.utcnow()
     )
 
 

@@ -146,16 +146,39 @@
 </div>
 
 {% if timetable_grid %}
-<div class="timetable-grid">
+
+<div class="tt-mobile-only">
+    <div class="tt-day-nav" id="tt-day-nav">
+        {% for day in days %}
+        <button class="tt-day-tab {% if loop.first %}active{% endif %}" data-day="{{ loop.index0 }}">
+            {{ day[:3] }}
+        </button>
+        {% endfor %}
+    </div>
+
     {% for day in days %}
-    <div class="timetable-day">
-        <div class="timetable-day-header">{{ day }}</div>
+    <div class="tt-day-panel" id="day-panel-{{ loop.index0 }}" {% if not loop.first %}style="display:none"{% endif %}>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+            {% if not loop.first %}
+            <button class="btn-outline" style="font-size:0.8rem;padding:0.3rem 0.75rem" onclick="switchDay({{ loop.index0 - 1 }})">← {{ days[loop.index0 - 1][:3] }}</button>
+            {% else %}
+            <div></div>
+            {% endif %}
+            <h2 style="font-size:1rem;font-weight:600">{{ day }}</h2>
+            {% if not loop.last %}
+            <button class="btn-outline" style="font-size:0.8rem;padding:0.3rem 0.75rem" onclick="switchDay({{ loop.index0 + 1 }})">{{ days[loop.index0 + 1][:3] }} →</button>
+            {% else %}
+            <div></div>
+            {% endif %}
+        </div>
+
         {% set day_has_events = [] %}
         {% for period in periods %}
             {% if timetable_grid[period][day] %}
                 {% set _ = day_has_events.append(1) %}
             {% endif %}
         {% endfor %}
+
         {% if day_has_events %}
             {% for period in periods %}
                 {% set event = timetable_grid[period][day] %}
@@ -163,7 +186,7 @@
                 <div class="timetable-period"
                      data-start="{{ event.start_time.strftime('%H:%M') }}"
                      data-end="{{ event.end_time.strftime('%H:%M') }}">
-                    <div class="period-time">{{ event.start_time.strftime('%H:%M') }} – {{ event.end_time.strftime('%H:%M') }}</div>
+                    <div class="period-time">{{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}</div>
                     <div class="period-subject">{{ event.subject }}</div>
                     {% if event.room %}
                     <div class="period-meta">{{ event.room }}{% if event.teacher %} · {{ event.teacher }}{% endif %}</div>
@@ -190,6 +213,54 @@
     </div>
     {% endfor %}
 </div>
+
+<div class="tt-desktop-only">
+    <div class="timetable-grid">
+        {% for day in days %}
+        <div class="timetable-day">
+            <div class="timetable-day-header">{{ day }}</div>
+            {% set day_has_events = [] %}
+            {% for period in periods %}
+                {% if timetable_grid[period][day] %}
+                    {% set _ = day_has_events.append(1) %}
+                {% endif %}
+            {% endfor %}
+            {% if day_has_events %}
+                {% for period in periods %}
+                    {% set event = timetable_grid[period][day] %}
+                    {% if event %}
+                    <div class="timetable-period"
+                         data-start="{{ event.start_time.strftime('%H:%M') }}"
+                         data-end="{{ event.end_time.strftime('%H:%M') }}">
+                        <div class="period-time">{{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}</div>
+                        <div class="period-subject">{{ event.subject }}</div>
+                        {% if event.room %}
+                        <div class="period-meta">{{ event.room }}{% if event.teacher %} · {{ event.teacher }}{% endif %}</div>
+                        {% endif %}
+                        {% if event.period %}
+                        <div class="period-tag">{{ event.period }}</div>
+                        {% endif %}
+                        <div class="period-healthbar-row">
+                            <span class="period-healthbar-label">{{ event.period | replace('Period ', 'P') }}</span>
+                            <div class="period-healthbar">
+                                <div class="period-healthbar-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="timetable-period timetable-period-empty">
+                        <div class="period-tag" style="color:#2a2a2a">{{ period }}</div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="timetable-empty">No classes</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 {% else %}
 <div class="empty-state" style="margin-top:3rem">
     <p>No timetable imported yet.</p>
@@ -226,18 +297,36 @@ function updateFileLabel(input) {
     }
 }
 
+function switchDay(index) {
+    document.querySelectorAll('.tt-day-panel').forEach((p, i) => {
+        p.style.display = i === index ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tt-day-tab').forEach((t, i) => {
+        t.classList.toggle('active', i === index);
+    });
+}
+
+// Auto-switch to today on load
+document.addEventListener('DOMContentLoaded', () => {
+    const todayIndex = new Date().getDay() - 1;
+    if (todayIndex >= 0 && todayIndex <= 4) {
+        switchDay(todayIndex);
+    }
+    document.querySelectorAll('.tt-day-tab').forEach((tab, i) => {
+        tab.addEventListener('click', () => switchDay(i));
+    });
+});
+
 function updateProgressBars() {
     const now = new Date();
     const currentMins = now.getHours() * 60 + now.getMinutes();
-    const currentSecs = now.getSeconds();
-    const currentDay = now.getDay();
     const dayMap = {1:'MONDAY', 2:'TUESDAY', 3:'WEDNESDAY', 4:'THURSDAY', 5:'FRIDAY'};
-    const todayName = dayMap[currentDay] || '';
+    const todayName = dayMap[now.getDay()] || '';
 
     document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
         const col = cell.closest('.timetable-day');
         const header = col ? col.querySelector('.timetable-day-header') : null;
-        const colDay = header ? header.textContent.trim().toUpperCase() : '';
+        const colDay = header ? header.textContent.trim().toUpperCase() : todayName;
         const fill = cell.querySelector('.period-healthbar-fill');
         if (!fill) return;
 
@@ -269,28 +358,28 @@ function updateClock() {
     const clockEl = document.getElementById('tt-clock');
     const dateEl = document.getElementById('tt-date');
     if (!clockEl || !dateEl) return;
-    
+
     clockEl.textContent = now.toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
     dateEl.textContent = now.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
     const currentMins = now.getHours() * 60 + now.getMinutes();
     const dayMap = {1:'MONDAY', 2:'TUESDAY', 3:'WEDNESDAY', 4:'THURSDAY', 5:'FRIDAY'};
     const todayName = dayMap[now.getDay()] || '';
-    
+
     let currentPeriod = null;
     let nextPeriod = null;
-    
+
     document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
         const col = cell.closest('.timetable-day');
         const header = col ? col.querySelector('.timetable-day-header') : null;
-        const colDay = header ? header.textContent.trim().toUpperCase() : '';
+        const colDay = header ? header.textContent.trim().toUpperCase() : todayName;
         if (colDay !== todayName) return;
-        
+
         const [sh, sm] = cell.dataset.start.split(':').map(Number);
         const [eh, em] = cell.dataset.end.split(':').map(Number);
         const startMins = sh * 60 + sm;
         const endMins = eh * 60 + em;
-        
+
         if (currentMins >= startMins && currentMins < endMins) {
             currentPeriod = cell.querySelector('.period-subject')?.textContent || '';
         }

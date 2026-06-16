@@ -10,16 +10,19 @@
 </head>
 <body style="font-family: '{{ current_user.font_family if current_user.is_authenticated and current_user.settings and current_user.settings.font_family else 'Inter' }}', sans-serif">
     <nav>
-        <div style="display:flex;align-items:center;gap:1rem">
+        <div style="display:flex;align-items:center;gap:1rem;flex-shrink:0">
             <button id="theme-toggle" class="btn-outline" style="padding:0.3rem 0.6rem;font-size:0.875rem" title="Toggle theme">🌙</button>
             <a href="{{ url_for('dashboard') if current_user.is_authenticated else url_for('index') }}" class="nav-brand" style="display:flex;align-items:center;gap:0.5rem;text-decoration:none">
                 <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="" width="22" height="22">
-                <span class="gold">Prism Hub</span>
+                <span class="gold" style="white-space:nowrap">Prism Hub</span>
             </a>
         </div>
 
         {% if current_user.is_authenticated %}
-        <div class="nav-links">
+        <button class="hamburger" id="hamburger-btn" aria-label="Menu">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-links" id="nav-links">
             <div class="nav-dropdown">
                 <button class="nav-dropdown-trigger">Academics</button>
                 <div class="nav-dropdown-menu">
@@ -28,7 +31,6 @@
                     <a href="{{ url_for('analytics') }}">Analytics</a>
                 </div>
             </div>
-
             <div class="nav-dropdown">
                 <button class="nav-dropdown-trigger">Study</button>
                 <div class="nav-dropdown-menu">
@@ -36,14 +38,12 @@
                     <a href="{{ url_for('study') }}">Study Planner</a>
                 </div>
             </div>
-
             <div class="nav-dropdown">
                 <button class="nav-dropdown-trigger">Schedule</button>
                 <div class="nav-dropdown-menu">
                     <a href="{{ url_for('timetable') }}">Timetable</a>
                 </div>
             </div>
-
             <div class="nav-dropdown">
                 <button class="nav-dropdown-trigger">Settings</button>
                 <div class="nav-dropdown-menu align-right">
