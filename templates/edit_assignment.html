@@ -5,7 +5,7 @@
     <div>
         <a href="{{ url_for('assignments') }}" class="back-link">← Assignments</a>
         <h1 class="page-title" style="margin-top:0.25rem">{{ assignment.title }}</h1>
-        <p class="deck-subject-label">{{ assignment.subject }} · Due {{ assignment.due_date.strftime('%d %b %Y') }}</p>
+        <p class="deck-subject-label">{{ assignment.subject }}{% if assignment.due_date %} · Due {{ assignment.due_date.strftime('%d %b %Y') }}{% endif %}</p>
     </div>
 </div>
 
@@ -25,8 +25,10 @@
                     <input type="text" name="subject" value="{{ assignment.subject }}" required>
                 </div>
                 <div class="form-group">
-                    <label>Due date <span style="color:#6b7280;font-weight:400;font-size:0.75rem">(when it's due)</span></label>
-                    <input type="date" name="due_date" value="{{ assignment.due_date.strftime('%Y-%m-%d') }}" min="2020-01-01" max="2099-12-31" required>
+                    <label>Due date <span style="color:#6b7280;font-weight:400;font-size:0.75rem">(optional — date received or exam date)</span></label>
+                    <input type="date" name="due_date" 
+                        value="{{ assignment.due_date.strftime('%Y-%m-%d') if assignment.due_date else '' }}" 
+                        min="2020-01-01" max="2099-12-31">
                 </div>
                 <div class="form-group">
                     <label>Priority</label>

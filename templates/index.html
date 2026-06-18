@@ -1,79 +1,77 @@
 {% extends "base.html" %}
 {% block content %}
 
-<div style="text-align:center;padding:3rem 0 2rem">
-    <h1 style="font-size:2.5rem;font-weight:600;margin-bottom:0.75rem">
+<div style="text-align:center;padding:4rem 1rem 3rem">
+    <h1 style="font-size:2.75rem;font-weight:600;margin-bottom:0.875rem;line-height:1.2">
         Welcome to <span class="gold">Prism Hub</span>
     </h1>
-    <p style="font-size:1rem;color:var(--text-muted);max-width:540px;margin:0 auto">
-        Your all-in-one academic command centre - assignments, marks, flashcards, timetable and AI-powered study insights, in one place.
+    <p style="font-size:1rem;color:var(--text-muted);max-width:520px;margin:0 auto;line-height:1.7">
+        Your all-in-one academic command centre. Assignments, marks, flashcards, timetable and AI-powered study insights, unified.
     </p>
-    <div style="margin-top:1.75rem;display:flex;gap:0.75rem;justify-content:center">
+    <div style="margin-top:2rem;display:flex;gap:0.75rem;justify-content:center">
         {% if current_user.is_authenticated %}
-        <a href="{{ url_for('dashboard') }}" class="btn-gold" style="padding:0.625rem 1.75rem;font-size:0.9rem">Go to Dashboard</a>
+        <a href="{{ url_for('dashboard') }}" class="btn-gold" style="padding:0.7rem 2rem;font-size:0.9rem">Go to Dashboard</a>
         {% else %}
-        <a href="{{ url_for('register') }}" class="btn-gold" style="padding:0.625rem 1.75rem;font-size:0.9rem">Get Started</a>
-        <a href="{{ url_for('login') }}" class="btn-outline" style="padding:0.625rem 1.75rem;font-size:0.9rem">Log In</a>
+        <a href="{{ url_for('register') }}" class="btn-gold" style="padding:0.7rem 2rem;font-size:0.9rem">Get Started</a>
+        <a href="{{ url_for('login') }}" class="btn-outline" style="padding:0.7rem 2rem;font-size:0.9rem">Log In</a>
         {% endif %}
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));gap:1rem;margin-top:2.5rem">
+<section style="max-width:660px;margin:0 auto;padding:2rem 1.5rem 5rem">
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">📋</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Assignments</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            Track every task with priorities, due dates, and checklists - never miss a deadline again.
-        </p>
+    <div style="display:flex;gap:2rem;align-items:flex-start;padding:1.75rem 0">
+        <div style="font-size:0.65rem;font-weight:700;color:#C9A84C;letter-spacing:0.1em;opacity:0.7;padding-top:0.3rem;flex-shrink:0;width:1.75rem">01</div>
+        <div>
+            <h3 style="font-size:1.05rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem">Assignment tracking</h3>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.75">Track every task with priorities, due dates, and subtask checklists. Never lose track of what's due.</p>
+        </div>
     </div>
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">📊</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Marks &amp; Analytics</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            Log assessment results and watch weighted averages, trends, and grade boundaries update in real time.
-        </p>
+    <div style="height:1px;background:linear-gradient(to right,rgba(201,168,76,0.25),transparent);margin-left:3.5rem"></div>
+
+    <div style="display:flex;gap:2rem;align-items:flex-start;padding:1.75rem 0">
+        <div style="font-size:0.65rem;font-weight:700;color:#C9A84C;letter-spacing:0.1em;opacity:0.7;padding-top:0.3rem;flex-shrink:0;width:1.75rem">02</div>
+        <div>
+            <h3 style="font-size:1.05rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem">Marks and analytics</h3>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.75">Log every assessment with weighting. Watch weighted averages and grade trends update across all your subjects in real time.</p>
+        </div>
     </div>
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">🃏</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Flashcards</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            Build decks, import from CSV, and quiz yourself with streaks, retention tracking and a flip-card mode.
-        </p>
+    <div style="height:1px;background:linear-gradient(to right,rgba(201,168,76,0.25),transparent);margin-left:3.5rem"></div>
+
+    <div style="display:flex;gap:2rem;align-items:flex-start;padding:1.75rem 0">
+        <div style="font-size:0.65rem;font-weight:700;color:#C9A84C;letter-spacing:0.1em;opacity:0.7;padding-top:0.3rem;flex-shrink:0;width:1.75rem">03</div>
+        <div>
+            <h3 style="font-size:1.05rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem">AI study planner</h3>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.75">A machine learning engine analyses your marks, upcoming work, and flashcard history to recommend exactly what to study and when.</p>
+        </div>
     </div>
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">🗓️</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Timetable</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            Import your Sentral timetable and see a live view of your day, with current period highlighting.
-        </p>
+    <div style="height:1px;background:linear-gradient(to right,rgba(201,168,76,0.25),transparent);margin-left:3.5rem"></div>
+
+    <div style="display:flex;gap:2rem;align-items:flex-start;padding:1.75rem 0">
+        <div style="font-size:0.65rem;font-weight:700;color:#C9A84C;letter-spacing:0.1em;opacity:0.7;padding-top:0.3rem;flex-shrink:0;width:1.75rem">04</div>
+        <div>
+            <h3 style="font-size:1.05rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem">Flashcards with retention</h3>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.75">Create decks, quiz yourself, and get prompted for a retention check 3 days later. Spaced repetition built in.</p>
+        </div>
     </div>
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">🧠</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Study Planner</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            AI-driven recommendations highlight what to study next based on your marks and upcoming work.
-        </p>
+    <div style="height:1px;background:linear-gradient(to right,rgba(201,168,76,0.25),transparent);margin-left:3.5rem"></div>
+
+    <div style="display:flex;gap:2rem;align-items:flex-start;padding:1.75rem 0">
+        <div style="font-size:0.65rem;font-weight:700;color:#C9A84C;letter-spacing:0.1em;opacity:0.7;padding-top:0.3rem;flex-shrink:0;width:1.75rem">05</div>
+        <div>
+            <h3 style="font-size:1.05rem;font-weight:600;color:var(--text-main);margin-bottom:0.5rem">Timetable and shortcuts</h3>
+            <p style="font-size:0.875rem;color:var(--text-muted);line-height:1.75">Import from Sentral, see today's classes on your dashboard, and pin quick links to Classroom, Sentral or anywhere else.</p>
+        </div>
     </div>
 
-    <div class="card">
-        <p style="font-size:1.5rem;margin-bottom:0.5rem">🎨</p>
-        <h3 style="font-size:1rem;font-weight:600;margin-bottom:0.375rem">Make It Yours</h3>
-        <p style="font-size:0.825rem;color:var(--text-muted);line-height:1.5">
-            Light or dark mode, custom fonts, and a fully personalised grading scale to match your school.
-        </p>
-    </div>
+</section>
 
-</div>
-
-<div style="margin-top:3rem;text-align:center;padding-top:2rem;border-top:1px solid var(--border-col)">
-    <p style="font-size:0.8rem;color:var(--text-muted)">
-        Built by a student, for students - designed around the NSW HSC Enterprise Computing syllabus.
-    </p>
+<div style="text-align:center;padding:2rem 1rem;border-top:1px solid var(--border-col)">
+    <p style="font-size:0.75rem;color:var(--text-muted)">Built by a student, for students.</p>
 </div>
 
 {% endblock %}

@@ -14,8 +14,8 @@
                 <a href="mailto:prismhub.dev@gmail.com" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">prismhub.dev@gmail.com</a>
             </div>
             <div>
-                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Instagram - prismhub.dev</p>
-                <a href="https://www.instagram.com/prismhub.dev/" target="_blank" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">prismhub-dev/prism-hub</a>
+                <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">Instagram</p>
+                <a href="https://www.instagram.com/prismhub.dev/" target="_blank" style="font-size:0.95rem;color:var(--color-brand-gold);text-decoration:none">prismhub.dev</a>
             </div>
             <div>
                 <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.25rem">GitHub</p>
@@ -28,6 +28,33 @@
                 </p>
             </div>
         </div>
+    </div>
+
+    <div class="card" style="text-align:left;margin-top:1.25rem">
+        <p style="font-size:0.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:1rem">Send a message</p>
+        
+        {% if request.args.get('sent') %}
+        <div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);border-radius:0.5rem;padding:0.875rem 1rem;color:#4ade80;font-size:0.875rem;margin-bottom:1rem">
+            Message sent. I'll get back to you soon.
+        </div>
+        {% endif %}
+
+        <form action="https://formspree.io/f/xlgkyeea" method="POST" style="display:flex;flex-direction:column;gap:0.875rem">
+            <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Name</label>
+                <input type="text" name="name" class="form-input" placeholder="Your name" required>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-input" placeholder="your@email.com" required>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Message</label>
+                <textarea name="message" class="form-textarea" rows="4" placeholder="Your query..." required></textarea>
+            </div>
+            <input type="hidden" name="_next" value="https://prism-hub.onrender.com/contact?sent=true">
+            <button type="submit" class="btn-primary">Send message</button>
+        </form>
     </div>
 </div>
 

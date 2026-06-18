@@ -1495,4 +1495,21 @@
         border-color: var(--color-brand-gold);
         font-weight: 600;
     }
+    .notes-folder {
+        display: block;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-radius: 0.375rem;
+        transition: background 0.15s, color 0.15s;
+    }
+    .notes-folder:hover {
+        background: var(--bg-input);
+        color: var(--text-main);
+    }
+    .notes-folder-active {
+        background: rgba(201,168,76,0.1);
+        color: #C9A84C;
+    }
 }

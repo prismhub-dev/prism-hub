@@ -33,7 +33,7 @@
                 </div>
                 {% if rec.assignment %}
                 <p style="font-size:0.8rem;color:#6b7280;margin-bottom:0.5rem">
-                    📋 {{ rec.assignment }}{% if rec.due_in_days is not none %} · due in {{ rec.due_in_days }} day{{ 's' if rec.due_in_days != 1 }}{% endif %}
+                    {{ rec.assignment }}{% if rec.due_in_days is not none %} · due in {{ rec.due_in_days }} day{{ 's' if rec.due_in_days != 1 }}{% endif %}
                 </p>
                 {% endif %}
                 <p style="font-size:0.875rem;color:#d1d5db;line-height:1.5">{{ rec.tip }}</p>

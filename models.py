@@ -25,7 +25,7 @@ class Assignment(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     title = db.Column(db.String(200), nullable=False)
     subject = db.Column(db.String(100), nullable=False)
-    due_date = db.Column(db.DateTime, nullable=False)
+    due_date = db.Column(db.DateTime, nullable=True)
     priority = db.Column(db.Integer, default=2)
     completed = db.Column(db.Boolean, default=False)
     tasks = db.relationship('AssignmentTask', backref='assignment', lazy=True, cascade='all, delete-orphan')
@@ -150,3 +150,22 @@ class Shortcut(db.Model):
     name = db.Column(db.String(50), nullable=False)
     url = db.Column(db.String(500), nullable=False)
     icon = db.Column(db.String(10), default='🔗')
+
+class Note(db.Model):
+    __tablename__ = 'notes'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    subject = db.Column(db.String(100), nullable=True)
+    content = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    links = db.relationship('NoteLink', backref='note', lazy=True, cascade='all, delete-orphan')
+
+class NoteLink(db.Model):
+    __tablename__ = 'note_links'
+    id = db.Column(db.Integer, primary_key=True)
+    note_id = db.Column(db.Integer, db.ForeignKey('notes.id'), nullable=False)
+    label = db.Column(db.String(200), nullable=True)
+    url = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

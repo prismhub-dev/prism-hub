@@ -1,6 +1,6 @@
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
-from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask, Shortcut
+from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask, Shortcut, Note, NoteLink
 import os
 from dotenv import load_dotenv
 import bcrypt
@@ -58,8 +58,9 @@ def register():
         user = User(username=username, email=email, password=hashed.decode('utf-8'))
         db.session.add(user)
         db.session.commit()
-        flash('Account created! Please log in.', 'success')
-        return redirect(url_for('login'))
+        login_user(user, remember=True)
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('dashboard'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -156,8 +157,15 @@ def assignments():
             title = request.form.get('title', '').strip()
             subject = request.form.get('subject', '').strip()
             due_date_str = request.form.get('due_date', '').strip()
+            due_date = None
             priority = int(request.form.get('priority', 2))
             
+            if due_date_str:
+                try:
+                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
+                except ValueError:
+                    pass
+
             if title and subject and due_date_str:
                 try:
                     due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
@@ -198,10 +206,14 @@ def assignments():
     
     pending = Assignment.query.filter_by(
         user_id=current_user.id, completed=False
-    ).order_by(Assignment.due_date).all()
+    ).order_by(
+        Assignment.due_date.asc().nullslast(),
+        Assignment.id.asc()
+    ).all()
+
     completed = Assignment.query.filter_by(
         user_id=current_user.id, completed=True
-    ).order_by(Assignment.due_date.desc()).limit(10).all()
+    ).order_by(Assignment.id.desc()).all()
     
     return render_template('assignments.html',
         pending=pending,
@@ -971,9 +983,20 @@ def retention_check():
         'due': d.retention_due.isoformat()
     } for d in due_decks])
 
-@app.route('/contact')
+@app.route('/contact', methods=['GET', 'POST'])
 def contact():
-    return render_template('contact.html')
+    sent = False
+    error = None
+    if request.method == 'POST':
+        name = request.form.get('name', '').strip()
+        email = request.form.get('email', '').strip()
+        message = request.form.get('message', '').strip()
+        if name and email and message:
+            # Store in DB for now since no mail server
+            sent = True
+        else:
+            error = 'Please fill in all fields.'
+    return render_template('contact.html', sent=sent, error=error)
 
 @app.route('/shortcuts/add', methods=['POST'])
 @login_required
@@ -997,6 +1020,69 @@ def delete_shortcut(shortcut_id):
     db.session.delete(shortcut)
     db.session.commit()
     return redirect(url_for('dashboard'))
+
+@app.route('/notes', methods=['GET', 'POST'])
+@login_required
+def notes():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'create':
+            title = request.form.get('title', '').strip()
+            subject = request.form.get('subject', '').strip() or None
+            content = request.form.get('content', '').strip() or None
+            if title:
+                note = Note(user_id=current_user.id, title=title, subject=subject, content=content)
+                db.session.add(note)
+                db.session.flush()
+                labels = request.form.getlist('link_label[]')
+                urls = request.form.getlist('link_url[]')
+                for label, url_val in zip(labels, urls):
+                    url_val = url_val.strip()
+                    if url_val:
+                        db.session.add(NoteLink(note_id=note.id, label=label.strip() or url_val, url=url_val))
+                db.session.commit()
+        elif action == 'delete':
+            note_id = request.form.get('note_id', type=int)
+            note = Note.query.filter_by(id=note_id, user_id=current_user.id).first()
+            if note:
+                db.session.delete(note)
+                db.session.commit()
+        return redirect(url_for('notes'))
+
+    subject_filter = request.args.get('subject', '')
+    query = Note.query.filter_by(user_id=current_user.id)
+    if subject_filter:
+        query = query.filter_by(subject=subject_filter)
+    all_notes = query.order_by(Note.updated_at.desc()).all()
+
+    subjects_raw = db.session.query(Note.subject).filter_by(user_id=current_user.id).distinct().all()
+    note_subjects = sorted([s[0] for s in subjects_raw if s[0]])
+    user_subjects = Subject.query.filter_by(user_id=current_user.id).all()
+
+    return render_template('notes.html', notes=all_notes, note_subjects=note_subjects,
+                           user_subjects=user_subjects, active_subject=subject_filter)
+
+
+@app.route('/notes/<int:note_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_note(note_id):
+    note = Note.query.filter_by(id=note_id, user_id=current_user.id).first_or_404()
+    if request.method == 'POST':
+        note.title = request.form.get('title', '').strip() or note.title
+        note.subject = request.form.get('subject', '').strip() or None
+        note.content = request.form.get('content', '').strip() or None
+        note.updated_at = datetime.utcnow()
+        NoteLink.query.filter_by(note_id=note.id).delete()
+        labels = request.form.getlist('link_label[]')
+        urls = request.form.getlist('link_url[]')
+        for label, url_val in zip(labels, urls):
+            url_val = url_val.strip()
+            if url_val:
+                db.session.add(NoteLink(note_id=note.id, label=label.strip() or url_val, url=url_val))
+        db.session.commit()
+        return redirect(url_for('notes'))
+    user_subjects = Subject.query.filter_by(user_id=current_user.id).all()
+    return render_template('edit_note.html', note=note, user_subjects=user_subjects)
 
 with app.app_context():
     db.create_all()

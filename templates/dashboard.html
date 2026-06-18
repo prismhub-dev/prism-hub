@@ -11,7 +11,7 @@
 <div id="retention-banner" style="display:none;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:0.5rem;padding:1rem 1.25rem;margin-bottom:1.5rem">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
         <div>
-            <p style="font-size:0.875rem;font-weight:600;color:#C9A84C;margin-bottom:0.25rem">🧠 Retention check due</p>
+            <p style="font-size:0.875rem;font-weight:600;color:#C9A84C;margin-bottom:0.25rem">Retention check due</p>
             <p style="font-size:0.8rem;color:#9ca3af" id="retention-text">Some of your flashcard decks are ready for a retention quiz.</p>
         </div>
         <div id="retention-links" style="display:flex;gap:0.5rem;flex-wrap:wrap"></div>
@@ -70,7 +70,7 @@
                         <span class="priority-badge priority-{{ a.priority }}">
                             {% if a.priority == 1 %}Low{% elif a.priority == 2 %}Mid{% else %}High{% endif %}
                         </span>
-                        <p class="assignment-due">{{ a.due_date.strftime('%d %b') }}</p>
+                        <p class="assignment-due">{% if a.due_date %}{{ a.due_date.strftime('%d %b') }}{% else %}No date{% endif %}</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -89,19 +89,15 @@
         </div>
         <div class="quick-actions">
             <a href="{{ url_for('assignments') }}" class="action-btn">
-                <span class="action-icon">📋</span>
                 <span>Add assignment</span>
             </a>
             <a href="{{ url_for('marks') }}" class="action-btn">
-                <span class="action-icon">📊</span>
                 <span>Log a mark</span>
             </a>
             <a href="{{ url_for('flashcards') }}" class="action-btn">
-                <span class="action-icon">🃏</span>
                 <span>Study flashcards</span>
             </a>
             <a href="{{ url_for('analytics') }}" class="action-btn">
-                <span class="action-icon">📈</span>
                 <span>View analytics</span>
             </a>
         </div>

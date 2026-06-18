@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div style="display:grid;grid-template-columns:200px 1fr;gap:2rem;align-items:start">
+
+    <!-- Subject sidebar -->
+    <div>
+        <p style="font-size:0.7rem;font-weight:600;color:var(--text-muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.75rem">Folders</p>
+        <div style="display:flex;flex-direction:column;gap:0.25rem">
+            <a href="{{ url_for('notes') }}" class="notes-folder {% if not active_subject %}notes-folder-active{% endif %}">
+                All notes
+            </a>
+            {% for subj in note_subjects %}
+            <a href="{{ url_for('notes', subject=subj) }}" class="notes-folder {% if active_subject == subj %}notes-folder-active{% endif %}">
+                {{ subj }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+            <h1 class="page-title">{% if active_subject %}{{ active_subject }}{% else %}All notes{% endif %}</h1>
+            <button class="btn-gold" onclick="document.getElementById('note-modal').style.display='flex'">New note</button>
+        </div>
+
+        {% if notes %}
+        <div style="display:grid;gap:1rem">
+            {% for note in notes %}
+            <div class="card" style="position:relative">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem">
+                    <div style="flex:1;min-width:0">
+                        <div style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.375rem">
+                            <span style="font-size:0.925rem;font-weight:600;color:var(--text-main)">{{ note.title }}</span>
+                            {% if note.subject %}
+                            <span style="font-size:0.65rem;padding:0.1rem 0.5rem;background:rgba(201,168,76,0.15);color:#C9A84C;border-radius:99px;border:1px solid rgba(201,168,76,0.25)">{{ note.subject }}</span>
+                            {% endif %}
+                        </div>
+                        {% if note.content %}
+                        <p style="font-size:0.8rem;color:var(--text-muted);line-height:1.6;margin-bottom:0.75rem;white-space:pre-wrap">{{ note.content[:300] }}{% if note.content|length > 300 %}…{% endif %}</p>
+                        {% endif %}
+                        {% if note.links %}
+                        <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+                            {% for link in note.links %}
+                            <a href="{{ link.url }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.375rem;font-size:0.75rem;color:#C9A84C;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:0.375rem;padding:0.25rem 0.625rem;text-decoration:none" onmouseover="this.style.background='rgba(201,168,76,0.15)'" onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                {{ link.label or link.url }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div style="display:flex;gap:0.5rem;flex-shrink:0">
+                        <a href="{{ url_for('edit_note', note_id=note.id) }}" style="font-size:0.75rem;color:var(--text-muted);text-decoration:none;padding:0.25rem 0.5rem;border:1px solid var(--border-col);border-radius:0.375rem" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">Edit</a>
+                        <form method="POST" data-confirm="Delete this note?">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="note_id" value="{{ note.id }}">
+                            <button type="submit" class="delete-btn">✕</button>
+                        </form>
+                    </div>
+                </div>
+                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:0.75rem">{{ note.updated_at.strftime('%d %b %Y') }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="margin-top:3rem">
+            <p>No notes yet{% if active_subject %} in {{ active_subject }}{% endif %}.</p>
+            <button class="btn-gold" style="margin-top:1rem" onclick="document.getElementById('note-modal').style.display='flex'">Create your first note</button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New note modal -->
+<div class="modal-overlay" id="note-modal" style="display:none">
+    <div class="modal" style="max-width:540px;width:100%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+            <h2 class="modal-title">New note</h2>
+            <button type="button" onclick="document.getElementById('note-modal').style.display='none'" style="background:none;border:none;color:var(--text-muted);font-size:1.25rem;cursor:pointer;line-height:1">✕</button>
+        </div>
+        <form method="POST" style="display:flex;flex-direction:column;gap:0.875rem">
+            <input type="hidden" name="action" value="create">
+            <div class="form-group">
+                <label class="form-label">Title</label>
+                <input type="text" name="title" class="form-input" placeholder="Note title" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subject / folder <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+                <select name="subject" class="form-select">
+                    <option value="">No folder</option>
+                    {% for subj in user_subjects %}
+                    <option value="{{ subj.name }}">{{ subj.name }}</option>
+                    {% endfor %}
+                    {% for subj in note_subjects %}
+                    {% if subj not in user_subjects|map(attribute='name')|list %}
+                    <option value="{{ subj }}">{{ subj }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Content <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+                <textarea name="content" class="form-textarea" rows="4" placeholder="Write anything..."></textarea>
+            </div>
+            <div>
+                <label class="form-label" style="margin-bottom:0.5rem">Links <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+                <div id="links-container" style="display:flex;flex-direction:column;gap:0.5rem">
+                    <div class="link-row" style="display:grid;grid-template-columns:1fr 2fr auto;gap:0.5rem;align-items:center">
+                        <input type="text" name="link_label[]" class="form-input" placeholder="Label" style="font-size:0.8rem;padding:0.4rem 0.625rem">
+                        <input type="url" name="link_url[]" class="form-input" placeholder="https://..." style="font-size:0.8rem;padding:0.4rem 0.625rem">
+                        <button type="button" onclick="this.closest('.link-row').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0.25rem">✕</button>
+                    </div>
+                </div>
+                <button type="button" onclick="addLinkRow()" style="margin-top:0.5rem;font-size:0.75rem;color:#C9A84C;background:none;border:none;cursor:pointer;padding:0">+ Add link</button>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top:0.5rem">Create note</button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addLinkRow() {
+    const container = document.getElementById('links-container');
+    const row = document.createElement('div');
+    row.className = 'link-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 2fr auto;gap:0.5rem;align-items:center';
+    row.innerHTML = `
+        <input type="text" name="link_label[]" class="form-input" placeholder="Label" style="font-size:0.8rem;padding:0.4rem 0.625rem">
+        <input type="url" name="link_url[]" class="form-input" placeholder="https://..." style="font-size:0.8rem;padding:0.4rem 0.625rem">
+        <button type="button" onclick="this.closest('.link-row').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0.25rem">✕</button>
+    `;
+    container.appendChild(row);
+}
+</script>
+{% endblock %}
