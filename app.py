@@ -8,7 +8,7 @@ import csv
 import io
 import pytz
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from icalendar import Calendar
 from study_engine import get_study_recommendations
