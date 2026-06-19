@@ -1,10 +1,16 @@
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, session as flask_session
 from flask_login import LoginManager, login_required, current_user, login_user, logout_user
 from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask, Shortcut, Note, NoteLink
 import os
-from dotenv import load_dotenv
+import re
+import json
+import csv
+import io
+import pytz
+from collections import defaultdict
 from datetime import datetime, timezone
-import csv, io
+from dotenv import load_dotenv
+from icalendar import Calendar
 from study_engine import get_study_recommendations
 from supabase import create_client, Client
 
@@ -128,7 +134,6 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    from datetime import datetime, timezone
     assignments = Assignment.query.filter_by(
         user_id=current_user.id, completed=False
     ).order_by(Assignment.due_date).limit(5).all()
@@ -149,7 +154,6 @@ def dashboard():
     today_weekday = today.weekday()  # 0=Monday
     all_events = TimetableEvent.query.filter_by(user_id=current_user.id).all()
     
-    from collections import defaultdict
     weeks = defaultdict(list)
     for e in all_events:
         wk = e.start_time.isocalendar()[:2]
@@ -198,21 +202,17 @@ def assignments():
             title = request.form.get('title', '').strip()
             subject = request.form.get('subject', '').strip()
             due_date_str = request.form.get('due_date', '').strip()
-            due_date = None
             priority = int(request.form.get('priority', 2))
-            
-            if due_date_str:
-                try:
-                    due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
-                except ValueError:
-                    pass
+            due_date = None
 
-            if title and subject and due_date_str:
+            if due_date_str:
                 try:
                     due_date = datetime.strptime(due_date_str, '%Y-%m-%d')
                 except ValueError:
                     flash('Invalid date format. Please use the date picker.', 'error')
                     return redirect(url_for('assignments'))
+
+            if title and subject:
                 assignment = Assignment(
                     user_id=current_user.id,
                     title=title,
@@ -281,7 +281,6 @@ def marks():
             feedback = request.form.get('feedback', '').strip()
 
             if subject and assessment_name and mark and max_mark and weight_raw:
-                import re
                 if '/' in weight_raw:
                     parts = weight_raw.split('/')
                     weight = (float(parts[0]) / float(parts[1])) * 100
@@ -487,8 +486,6 @@ def quiz(deck_id):
 @app.route('/flashcards/<int:deck_id>/complete', methods=['POST'])
 @login_required
 def quiz_complete(deck_id):
-    from datetime import datetime, timezone, timedelta
-    import json
     data = request.get_json()
     today = datetime.now(timezone.utc).date()
     user = current_user
@@ -521,11 +518,7 @@ def timetable():
     if request.method == 'POST':
         action = request.form.get('action')
 
-        if action == 'import_ics':
-            from icalendar import Calendar
-            import pytz
-            from datetime import timezone as tz
-            
+        if action == 'import_ics':            
             file = request.files.get('ics_file')
             term_id = request.form.get('term_id') or None
             timezone_str = request.form.get('timezone', 'Australia/Sydney')
@@ -611,7 +604,6 @@ def timetable():
                             'teacher': event.teacher,
                             'room': event.room
                         }
-                from flask import session as flask_session
                 flask_session['pending_subjects'] = unique_subjects
                 flash(f'Imported {added} classes. Now select which subjects to add to your markbook.', 'success')
                 return redirect(url_for('setup_subjects'))
@@ -671,9 +663,6 @@ def timetable():
     events = TimetableEvent.query.filter_by(
         user_id=current_user.id
     ).order_by(TimetableEvent.start_time).all()
-
-    from collections import defaultdict
-    import datetime as dt
 
     all_events = TimetableEvent.query.filter_by(
         user_id=current_user.id
@@ -739,7 +728,6 @@ def timetable():
 @app.route('/timetable/setup-subjects', methods=['GET', 'POST'])
 @login_required
 def setup_subjects():
-    from flask import session as flask_session
     pending = flask_session.get('pending_subjects', {})
     
     if request.method == 'POST':
@@ -770,7 +758,6 @@ def setup_subjects():
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    import json
     settings = UserSettings.query.filter_by(user_id=current_user.id).first()
     if not settings:
         settings = UserSettings(user_id=current_user.id)
@@ -844,7 +831,6 @@ def settings():
 
     grading_scale = []
     if settings.grading_scale:
-        import json
         grading_scale = json.loads(settings.grading_scale)
 
     subjects = Subject.query.filter_by(user_id=current_user.id).all()
@@ -869,7 +855,6 @@ def delete_subject(subject_id):
 @app.route('/analytics')
 @login_required
 def analytics():
-    import json
     all_marks = Mark.query.filter_by(
         user_id=current_user.id
     ).order_by(Mark.date).all()
@@ -1008,7 +993,6 @@ def study():
 @app.route('/retention-check')
 @login_required
 def retention_check():
-    from datetime import datetime, timezone
     now = datetime.now(timezone.utc)
     due_decks = FlashcardDeck.query.filter(
         FlashcardDeck.user_id == current_user.id,
@@ -1022,20 +1006,9 @@ def retention_check():
         'due': d.retention_due.isoformat()
     } for d in due_decks])
 
-@app.route('/contact', methods=['GET', 'POST'])
+@app.route('/contact')
 def contact():
-    sent = False
-    error = None
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        email = request.form.get('email', '').strip()
-        message = request.form.get('message', '').strip()
-        if name and email and message:
-            # Store in DB for now since no mail server
-            sent = True
-        else:
-            error = 'Please fill in all fields.'
-    return render_template('contact.html', sent=sent, error=error)
+    return render_template('contact.html')
 
 @app.route('/shortcuts/add', methods=['POST'])
 @login_required
