@@ -3,10 +3,10 @@ from flask_login import LoginManager, login_required, current_user, login_user, 
 from models import db, User, Assignment, Mark, FlashcardDeck, Flashcard, TimetableEvent, Term, CustomEvent, Subject, UserSettings, AssignmentTask, Shortcut, Note, NoteLink
 import os
 from dotenv import load_dotenv
-import bcrypt
 from datetime import datetime, timezone
 import csv, io
 from study_engine import get_study_recommendations
+from supabase import create_client, Client
 
 load_dotenv()
 
@@ -16,6 +16,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+supabase: Client = create_client(
+    os.getenv('SUPABASE_URL'),
+    os.getenv('SUPABASE_KEY')
+)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -54,13 +58,25 @@ def register():
             flash('That username is taken.', 'error')
             return render_template('register.html')
 
-        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        user = User(username=username, email=email, password=hashed.decode('utf-8'))
+        try:
+            result = supabase.auth.sign_up({
+                "email": email,
+                "password": password,
+            })
+        except Exception as e:
+            flash(f'Could not create account: {str(e)}', 'error')
+            return render_template('register.html')
+
+        if not result.user:
+            flash('Could not create account. Try again.', 'error')
+            return render_template('register.html')
+
+        user = User(username=username, email=email, supabase_uid=result.user.id)
         db.session.add(user)
         db.session.commit()
-        login_user(user, remember=True)
-        flash('Account created successfully!', 'success')
-        return redirect(url_for('dashboard'))
+
+        flash('Account created! Check your email to verify your account before logging in.', 'success')
+        return redirect(url_for('login'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -70,16 +86,41 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '').strip()
-        user = User.query.filter_by(email=email).first()
-        if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+
+        try:
+            result = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password,
+            })
+        except Exception as e:
+            flash('Invalid email or password, or email not yet verified.', 'error')
+            return render_template('login.html')
+
+        if not result.user:
+            flash('Invalid email or password.', 'error')
+            return render_template('login.html')
+
+        user = User.query.filter_by(supabase_uid=result.user.id).first()
+        if not user:
+            user = User.query.filter_by(email=email).first()
+            if user:
+                user.supabase_uid = result.user.id
+                db.session.commit()
+
+        if user:
             login_user(user, remember=True)
             return redirect(url_for('dashboard'))
-        flash('Invalid email or password.', 'error')
+        else:
+            flash('Account not found locally. Contact support.', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
 @login_required
 def logout():
+    try:
+        supabase.auth.sign_out()
+    except Exception:
+        pass
     logout_user()
     return redirect(url_for('login'))
 
@@ -768,17 +809,15 @@ def settings():
             flash('Grading scale saved.', 'success')
 
         elif action == 'change_password':
-            current_pw = request.form.get('current_password', '')
             new_pw = request.form.get('new_password', '')
-            if not bcrypt.checkpw(current_pw.encode('utf-8'), current_user.password.encode('utf-8')):
-                flash('Current password is incorrect.', 'error')
-            elif len(new_pw) < 8:
+            if len(new_pw) < 8:
                 flash('New password must be at least 8 characters.', 'error')
             else:
-                hashed = bcrypt.hashpw(new_pw.encode('utf-8'), bcrypt.gensalt())
-                current_user.password = hashed.decode('utf-8')
-                db.session.commit()
-                flash('Password updated.', 'success')
+                try:
+                    supabase.auth.update_user({"password": new_pw})
+                    flash('Password updated.', 'success')
+                except Exception as e:
+                    flash(f'Could not update password: {str(e)}', 'error')
 
         elif action == 'change_username':
             new_username = request.form.get('new_username', '').strip()
@@ -1083,6 +1122,34 @@ def edit_note(note_id):
         return redirect(url_for('notes'))
     user_subjects = Subject.query.filter_by(user_id=current_user.id).all()
     return render_template('edit_note.html', note=note, user_subjects=user_subjects)
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        try:
+            supabase.auth.reset_password_for_email(email, {
+                "redirect_to": url_for('reset_password', _external=True)
+            })
+        except Exception:
+            pass  # Don't leak whether email exists
+        return render_template('forgot_password.html', sent=True)
+    return render_template('forgot_password.html', sent=False)
+
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        new_password = request.form.get('password', '')
+        access_token = request.form.get('access_token', '')
+        if len(new_password) < 8:
+            return render_template('reset_password.html', error='Password must be at least 8 characters.')
+        try:
+            supabase.auth.update_user({"password": new_password}, access_token)
+            return render_template('reset_password.html', success=True)
+        except Exception as e:
+            return render_template('reset_password.html', error=str(e))
+    return render_template('reset_password.html')
 
 with app.app_context():
     db.create_all()
