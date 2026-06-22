@@ -1643,6 +1643,8 @@
   }
   .nav-dropdown {
     position: relative;
+    display: inline-flex;
+    align-items: center;
   }
   .nav-dropdown-trigger {
     background: none;
