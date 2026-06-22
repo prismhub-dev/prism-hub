@@ -7,15 +7,15 @@
         <form method="POST" action="{{ url_for('register') }}">
             <div class="form-group">
                 <label for="username">Username</label>
-                <input type="text" id="username" name="username" placeholder="prismuser" required>
+                <input type="text" id="username" name="username" autocomplete="username" placeholder="prismuser" required>
             </div>
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" name="email" placeholder="you@example.com" required>
+                <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Min. 8 characters" required>
+                <input type="password" id="password" name="password" autocomplete="new-password" placeholder="Min. 8 characters" required>
             </div>
             <button type="submit" class="btn-primary">Create account</button>
         </form>

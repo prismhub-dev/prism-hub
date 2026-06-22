@@ -1354,9 +1354,7 @@
         display: inline-block;
         animation: flame-ignite 0.6s ease-out;
     }
-    .nav-dropdown {
-        position: relative;
-    }
+    .nav-dropdown { position: relative; display: inline-flex; align-items: center; }
     .nav-dropdown-trigger {
         background: none;
         border: none;

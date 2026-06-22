@@ -90,15 +90,23 @@ def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
+        identifier = request.form.get('identifier', '').strip()
         password = request.form.get('password', '').strip()
+
+        email = identifier.lower()
+        if '@' not in identifier:
+            user_lookup = User.query.filter_by(username=identifier).first()
+            if not user_lookup:
+                flash('Invalid username or password.', 'error')
+                return render_template('login.html')
+            email = user_lookup.email.lower()
 
         try:
             result = supabase.auth.sign_in_with_password({
                 "email": email,
                 "password": password,
             })
-        except Exception as e:
+        except Exception:
             flash('Invalid email or password, or email not yet verified.', 'error')
             return render_template('login.html')
 
@@ -116,8 +124,7 @@ def login():
         if user:
             login_user(user, remember=True)
             return redirect(url_for('dashboard'))
-        else:
-            flash('Account not found locally. Contact support.', 'error')
+        flash('Account not found locally. Contact support.', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
