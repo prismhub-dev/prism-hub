@@ -27,6 +27,14 @@ supabase: Client = create_client(
     os.getenv('SUPABASE_KEY')
 )
 
+# ─── Template Context ─────────────────────────────────────────────
+@app.context_processor
+def inject_supabase_config():
+    return {
+        'SUPABASE_URL': os.getenv('SUPABASE_URL'),
+        'SUPABASE_ANON_KEY': os.getenv('SUPABASE_ANON_KEY')  # Use ANON key here
+    }
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -1119,17 +1127,9 @@ def forgot_password():
 
 @app.route('/reset-password', methods=['GET', 'POST'])
 def reset_password():
-    if request.method == 'POST':
-        new_password = request.form.get('password', '')
-        access_token = request.form.get('access_token', '')
-        if len(new_password) < 8:
-            return render_template('reset_password.html', error='Password must be at least 8 characters.')
-        try:
-            supabase.auth.update_user({"password": new_password}, access_token)
-            return render_template('reset_password.html', success=True)
-        except Exception as e:
-            return render_template('reset_password.html', error=str(e))
-    return render_template('reset_password.html')
+    success = request.args.get('success') == '1'
+    error = None
+    return render_template('reset_password.html', success=success, error=error)
 
 with app.app_context():
     db.create_all()
