@@ -184,8 +184,9 @@
                 {% set event = timetable_grid[period][day] %}
                 {% if event %}
                 <div class="timetable-period"
-                     data-start="{{ event.start_time.strftime('%H:%M') }}"
-                     data-end="{{ event.end_time.strftime('%H:%M') }}">
+                    data-day="{{ day.upper() }}"
+                    data-start="{{ event.start_time.strftime('%H:%M') }}"
+                    data-end="{{ event.end_time.strftime('%H:%M') }}">
                     <div class="period-time">{{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}</div>
                     <div class="period-subject">{{ event.subject }}</div>
                     {% if event.room %}
@@ -230,8 +231,9 @@
                     {% set event = timetable_grid[period][day] %}
                     {% if event %}
                     <div class="timetable-period"
-                         data-start="{{ event.start_time.strftime('%H:%M') }}"
-                         data-end="{{ event.end_time.strftime('%H:%M') }}">
+                        data-day="{{ day.upper() }}"
+                        data-start="{{ event.start_time.strftime('%H:%M') }}"
+                        data-end="{{ event.end_time.strftime('%H:%M') }}">
                         <div class="period-time">{{ event.start_time.strftime('%H:%M') }} - {{ event.end_time.strftime('%H:%M') }}</div>
                         <div class="period-subject">{{ event.subject }}</div>
                         {% if event.room %}
@@ -324,9 +326,7 @@ function updateProgressBars() {
     const todayName = dayMap[now.getDay()] || '';
 
     document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
-        const col = cell.closest('.timetable-day');
-        const header = col ? col.querySelector('.timetable-day-header') : null;
-        const colDay = header ? header.textContent.trim().toUpperCase() : todayName;
+        const colDay = cell.dataset.day || todayName;
         const fill = cell.querySelector('.period-healthbar-fill');
         if (!fill) return;
 
@@ -370,9 +370,7 @@ function updateClock() {
     let nextPeriod = null;
 
     document.querySelectorAll('.timetable-period[data-start]').forEach(cell => {
-        const col = cell.closest('.timetable-day');
-        const header = col ? col.querySelector('.timetable-day-header') : null;
-        const colDay = header ? header.textContent.trim().toUpperCase() : todayName;
+        const colDay = cell.dataset.day || todayName;
         if (colDay !== todayName) return;
 
         const [sh, sm] = cell.dataset.start.split(':').map(Number);

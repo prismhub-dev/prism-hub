@@ -125,9 +125,12 @@ def get_study_recommendations(user_marks, user_assignments, user_decks, user_str
     # Recommendations based on assignments
     for assignment in upcoming:
         due = assignment.due_date
-        if due.tzinfo is None:
-            due = due.replace(tzinfo=timezone.utc)
-        days_until = max(0, (due - now).days)
+        if due is not None:
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            days_until = max(0, (due - now).days)
+        else:
+            days_until = 14  # no due date set — treat as medium-term, not urgent
         
         subject = assignment.subject
         avg = subject_averages.get(subject, 60.0)

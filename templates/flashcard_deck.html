@@ -91,7 +91,7 @@
             <span class="spoiler-text">{{ card.answer }}</span>
         </div>
     </div>
-        <form method="POST" style="display:inline" data-confirm="Delete this deck and all its cards?">
+        <form method="POST" style="display:inline" data-confirm="Delete this card?">
             <input type="hidden" name="action" value="delete_card">
             <input type="hidden" name="card_id" value="{{ card.id }}">
             <button type="submit" class="delete-btn">✕</button>
